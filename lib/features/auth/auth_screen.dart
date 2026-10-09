@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import '../shell/home_shell.dart';
 import 'captcha_sheet.dart';
+import '../../main.dart' show googleAuthError;
 import 'google_auth.dart';
 
 /// Sign in / create account — the website's own /api/auth/login and /api/auth/register, so
@@ -17,7 +18,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   bool _signUp = false;
   bool _busy = false;
   bool _googleBusy = false;
@@ -31,7 +32,16 @@ class _AuthScreenState extends State<AuthScreen> {
   final _referral = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    googleAuthError.addListener(_onGoogleError);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    googleAuthError.removeListener(_onGoogleError);
     _email.dispose();
     _password.dispose();
     _name.dispose();
@@ -124,15 +134,35 @@ class _AuthScreenState extends State<AuthScreen> {
       _error = null;
       _notice = null;
     });
+    googleAuthError.value = null;
     try {
-      final ok = await GoogleAuth.signIn();
-      if (ok) await _enterApp();
+      // Opens Chrome; the result comes back to the app as a link (see main.dart).
+      await GoogleAuth.start();
     } on ApiException catch (e) {
       _fail(e.message);
-    } catch (_) {
-      _fail('Google sign-in failed. Please try again.');
-    } finally {
       if (mounted) setState(() => _googleBusy = false);
+    } catch (_) {
+      _fail('Could not open Google sign-in. Please try again.');
+      if (mounted) setState(() => _googleBusy = false);
+    }
+  }
+
+  void _onGoogleError() {
+    final message = googleAuthError.value;
+    if (message == null || !mounted) return;
+    setState(() {
+      _googleBusy = false;
+      _error = message;
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the browser without finishing: let the player try again after a moment.
+    if (state == AppLifecycleState.resumed && _googleBusy) {
+      Future<void>.delayed(const Duration(seconds: 4), () {
+        if (mounted && _googleBusy) setState(() => _googleBusy = false);
+      });
     }
   }
 

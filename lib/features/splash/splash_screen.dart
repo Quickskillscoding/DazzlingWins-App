@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/config.dart';
 import '../../core/theme.dart';
+import '../../core/app_state.dart';
+import '../../core/session.dart';
+import '../../main.dart' show appStarted;
 import '../auth/auth_screen.dart';
+import '../shell/home_shell.dart';
 
 /// Casino-style splash: spinning gold chip ring, glowing diamond, floating card suits and a
 /// shimmering wordmark. Stays at least [AppConfig.splashMinimum] while the session loads.
@@ -33,7 +37,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       Future<void>.delayed(AppConfig.splashMinimum),
     ]);
     if (!mounted) return;
-    final next = results.first as Widget;
+    var next = results.first as Widget;
+    // A Google sign-in may have completed while the splash was showing.
+    if (next is AuthScreen && Session.instance.isSignedIn) {
+      await AppState.instance.refreshAll().timeout(const Duration(seconds: 6), onTimeout: () {});
+      next = const HomeShell();
+    }
+    if (!mounted) return;
+    appStarted.value = true;
     Navigator.of(context).pushReplacement(PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 650),
       pageBuilder: (_, __, ___) => next,

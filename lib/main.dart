@@ -7,10 +7,17 @@ import 'core/app_state.dart';
 import 'core/session.dart';
 import 'core/theme.dart';
 import 'features/auth/auth_screen.dart';
+import 'features/auth/google_auth.dart';
 import 'features/shell/home_shell.dart';
 import 'features/splash/splash_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
+
+/// True once the splash screen has handed over (until then the splash decides the first screen).
+final appStarted = ValueNotifier<bool>(false);
+
+/// Google sign-in problems for the sign-in screen to show.
+final googleAuthError = ValueNotifier<String?>(null);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +39,22 @@ Future<void> main() async {
       (_) => false,
     );
   };
+
+  // Google sign-in returns to the app as a deep link (dazzlingwins://auth?code=…).
+  GoogleAuth.onResult = (error) async {
+    if (error != null) {
+      googleAuthError.value = error;
+      return;
+    }
+    googleAuthError.value = null;
+    if (!appStarted.value) return; // the splash sees the new session and opens the app itself
+    await AppState.instance.refreshAll().timeout(const Duration(seconds: 6), onTimeout: () {});
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeShell()),
+      (_) => false,
+    );
+  };
+  GoogleAuth.listen();
 
   runApp(const DazzlingWinsApp());
 }

@@ -151,23 +151,30 @@ def patch_manifest(path: pathlib.Path) -> None:
         1,
     )
     # Google sign-in: the website hands the one-time code back to this app via
-    # intent://auth?...#Intent;scheme=dazzlingwins;package=com.dazzlingwins.app;end (flutter_web_auth_2).
-    callback_activity = "".join(
+    # intent://auth?...#Intent;scheme=dazzlingwins;package=com.dazzlingwins.app;end, received by the
+    # main activity as a deep link (app_links). singleTask: the link returns to the running app
+    # instead of starting a second copy of it.
+    s, n = re.subn(r'android:launchMode="[^"]*"', 'android:launchMode="singleTask"', s, count=1)
+    if n == 0:
+        s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity"\n            android:launchMode="singleTask"', 1)
+    deep_link = "".join(
         line + "\n"
         for line in (
-            "        <activity",
-            '            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"',
-            '            android:exported="true">',
-            '            <intent-filter android:label="flutter_web_auth_2">',
+            '            <intent-filter android:label="DazzlingWins sign-in">',
             '                <action android:name="android.intent.action.VIEW" />',
             '                <category android:name="android.intent.category.DEFAULT" />',
             '                <category android:name="android.intent.category.BROWSABLE" />',
             '                <data android:scheme="dazzlingwins" android:host="auth" />',
             "            </intent-filter>",
-            "        </activity>",
         )
     )
-    s = s.replace("</application>", callback_activity + "    </application>", 1)
+    main_activity = s.find('android:name=".MainActivity"')
+    end_activity = s.find("</activity>", main_activity)
+    if main_activity < 0 or end_activity < 0:
+        fail("MainActivity not found in AndroidManifest.xml")
+    # Links are handled by app_links only, never pushed as Flutter routes.
+    deep_link += '            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />\n'
+    s = s[:end_activity] + deep_link + "        " + s[end_activity:]
     https_query = (
         "        <intent>\n"
         '            <action android:name="android.intent.action.VIEW" />\n'

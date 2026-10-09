@@ -1,0 +1,15 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Warnings fail CI (flutter analyze --fatal-warnings); keep the code clean.
+    unused_import: warning
+  language:
+    strict-casts: false
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    avoid_print: true
+    use_build_context_synchronously: true

@@ -1,0 +1,28 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+coverage/
+dist/
+
+# Platform folders are generated in CI by `flutter create` + scripts/prepare_android.py
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+
+# Never commit signing keys or secrets
+*.jks
+*.keystore
+*.p12
+key.properties
+*.env

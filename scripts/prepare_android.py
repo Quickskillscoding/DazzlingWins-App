@@ -4,6 +4,7 @@ Configures the Android project that `flutter create` generates in CI (the androi
 committed, so it always matches the pinned Flutter version). Idempotent: safe to run twice.
 
   * application id  com.dazzlingwins.app, label "DazzlingWins"
+  * Android Gradle Plugin / Gradle / Kotlin raised to versions current AndroidX libraries need
   * release signing from android/key.properties (written by CI from repository secrets)
   * core library desugaring (required by flutter_local_notifications)
   * permissions: INTERNET, POST_NOTIFICATIONS; backups off; cleartext (http) traffic off
@@ -19,6 +20,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 ANDROID = ROOT / "android"
 APP = ANDROID / "app"
 APP_ID = "com.dazzlingwins.app"
+# Android build tooling. Flutter 3.27's template pins AGP 8.1.0, but current AndroidX libraries
+# (e.g. androidx.webkit used by webview_flutter) need AGP 8.1.1+. These versions work together:
+# AGP 8.6.1 requires Gradle 8.7+; Kotlin 1.9.24 compiles every plugin in pubspec.yaml.
+AGP_VERSION = "8.6.1"
+GRADLE_VERSION = "8.7"
+KOTLIN_VERSION = "1.9.24"
 BG = "#FF07060E"
 
 
@@ -186,6 +193,44 @@ def write_resources() -> None:
     )
 
 
+def patch_tooling() -> None:
+    """Raise AGP / Kotlin in settings.gradle(.kts) and the Gradle wrapper version."""
+    for name in ("settings.gradle", "settings.gradle.kts"):
+        path = ANDROID / name
+        if not path.exists():
+            continue
+        s = path.read_text(encoding="utf-8")
+        s, n_agp = re.subn(
+            r'(id\s*\(?\s*"com\.android\.application"\s*\)?\s*version\s*\(?\s*)"[^"]+"',
+            lambda m: m.group(1) + f'"{AGP_VERSION}"',
+            s,
+        )
+        s = re.sub(
+            r'(id\s*\(?\s*"org\.jetbrains\.kotlin\.android"\s*\)?\s*version\s*\(?\s*)"[^"]+"',
+            lambda m: m.group(1) + f'"{KOTLIN_VERSION}"',
+            s,
+        )
+        if n_agp == 0:
+            fail(f"Android Gradle Plugin version not found in {name}")
+        path.write_text(s, encoding="utf-8")
+        break
+    else:
+        fail("android/settings.gradle(.kts) not found")
+
+    wrapper = ANDROID / "gradle" / "wrapper" / "gradle-wrapper.properties"
+    if not wrapper.exists():
+        fail("gradle-wrapper.properties not found")
+    w = wrapper.read_text(encoding="utf-8")
+    w, n = re.subn(
+        r"distributionUrl=.*",
+        lambda _m: r"distributionUrl=https\://services.gradle.org/distributions/gradle-" + GRADLE_VERSION + "-all.zip",
+        w,
+    )
+    if n == 0:
+        fail("distributionUrl not found in gradle-wrapper.properties")
+    wrapper.write_text(w, encoding="utf-8")
+
+
 def main() -> None:
     if not APP.exists():
         fail("android/app not found — run `flutter create --platforms=android .` first")
@@ -197,6 +242,7 @@ def main() -> None:
         patch_kts(kts)
     else:
         fail("no app build.gradle(.kts) found")
+    patch_tooling()
     patch_manifest(APP / "src" / "main" / "AndroidManifest.xml")
     write_resources()
     print("prepare_android: OK")

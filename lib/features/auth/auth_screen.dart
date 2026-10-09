@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import '../shell/home_shell.dart';
 import 'captcha_sheet.dart';
+import 'google_auth.dart';
 
 /// Sign in / create account — the website's own /api/auth/login and /api/auth/register, so
 /// bans, agent-account blocks, rate limits and the security check all apply exactly as on the site.
@@ -19,6 +20,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _signUp = false;
   bool _busy = false;
+  bool _googleBusy = false;
   bool _hidePassword = true;
   String? _error;
   String? _notice;
@@ -99,6 +101,11 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
     await Session.instance.saveFromJson(session, user: data['user'] as Map<String, dynamic>?);
+    await _enterApp();
+  }
+
+  /// Signed in (email or Google): load the player's data and open the app.
+  Future<void> _enterApp() async {
     await AppState.instance.refreshAll().timeout(const Duration(seconds: 6), onTimeout: () {});
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
@@ -109,6 +116,24 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       (_) => false,
     );
+  }
+
+  Future<void> _google() async {
+    setState(() {
+      _googleBusy = true;
+      _error = null;
+      _notice = null;
+    });
+    try {
+      final ok = await GoogleAuth.signIn();
+      if (ok) await _enterApp();
+    } on ApiException catch (e) {
+      _fail(e.message);
+    } catch (_) {
+      _fail('Google sign-in failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _googleBusy = false);
+    }
   }
 
   void _fail(String message) {
@@ -179,6 +204,21 @@ class _AuthScreenState extends State<AuthScreen> {
                     }),
                   ),
                   const SizedBox(height: 20),
+                  _GoogleButton(
+                    label: _signUp ? 'Sign up with Google' : 'Continue with Google',
+                    loading: _googleBusy,
+                    onPressed: _busy || _googleBusy ? null : _google,
+                  ),
+                  const SizedBox(height: 18),
+                  Row(children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('or with email', style: AppTheme.body(12, color: AppColors.faint)),
+                    ),
+                    const Expanded(child: Divider()),
+                  ]),
+                  const SizedBox(height: 18),
                   AnimatedSize(
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
@@ -293,6 +333,37 @@ class _Segment extends StatelessWidget {
             ),
         ]),
       ]),
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  const _GoogleButton({required this.label, required this.loading, required this.onPressed});
+  final String label;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onPressed,
+        child: SizedBox(
+          height: 56,
+          child: Center(
+            child: loading
+                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Color(0xFF1F1F1F)))
+                : Row(mainAxisSize: MainAxisSize.min, children: [
+                    Image.asset('assets/brand/google_g.png', width: 22, height: 22),
+                    const SizedBox(width: 12),
+                    Text(label, style: AppTheme.body(15, weight: FontWeight.w800, color: const Color(0xFF1F1F1F))),
+                  ]),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -9,6 +9,7 @@ committed, so it always matches the pinned Flutter version). Idempotent: safe to
   * core library desugaring (required by flutter_local_notifications)
   * permissions: INTERNET, POST_NOTIFICATIONS; backups off; cleartext (http) traffic off
   * https <queries> so url_launcher can open links and the APK download
+  * Google sign-in callback activity (scheme dazzlingwins://auth)
   * notification small icon and the dark brand launch background (no white flash)
 """
 import pathlib
@@ -149,6 +150,24 @@ def patch_manifest(path: pathlib.Path) -> None:
         '<application\n        android:allowBackup="false"\n        android:fullBackupContent="false"\n        android:usesCleartextTraffic="false"',
         1,
     )
+    # Google sign-in: the website hands the one-time code back to this app via
+    # intent://auth?...#Intent;scheme=dazzlingwins;package=com.dazzlingwins.app;end (flutter_web_auth_2).
+    callback_activity = "".join(
+        line + "\n"
+        for line in (
+            "        <activity",
+            '            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"',
+            '            android:exported="true">',
+            '            <intent-filter android:label="flutter_web_auth_2">',
+            '                <action android:name="android.intent.action.VIEW" />',
+            '                <category android:name="android.intent.category.DEFAULT" />',
+            '                <category android:name="android.intent.category.BROWSABLE" />',
+            '                <data android:scheme="dazzlingwins" android:host="auth" />',
+            "            </intent-filter>",
+            "        </activity>",
+        )
+    )
+    s = s.replace("</application>", callback_activity + "    </application>", 1)
     https_query = (
         "        <intent>\n"
         '            <action android:name="android.intent.action.VIEW" />\n'

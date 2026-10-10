@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import 'game_sheet.dart';
 import 'games_repo.dart';
+import 'my_games_screen.dart';
 
 class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
@@ -72,7 +73,16 @@ class _GamesScreenState extends State<GamesScreen> with AutomaticKeepAliveClient
               sliver: SliverPadding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
                 sliver: SliverList.list(children: [
-                  Text('Games', style: AppTheme.display(28)),
+                  Row(children: [
+                    Expanded(child: Text('Games', style: AppTheme.display(28))),
+                    _MyGamesButton(
+                      count: _mine.length,
+                      onTap: () async {
+                        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyGamesScreen()));
+                        if (mounted) _load();
+                      },
+                    ),
+                  ]),
                   const SizedBox(height: 4),
                   Text('Create an account, add score and redeem — all from here.', style: AppTheme.body(13, color: AppColors.muted)),
                   const SizedBox(height: 16),
@@ -133,6 +143,33 @@ class _GamesScreenState extends State<GamesScreen> with AutomaticKeepAliveClient
             await showGameSheet(context, games[i]);
             _load();
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// "My Games" pill next to the page title: the player's game logins.
+class _MyGamesButton extends StatelessWidget {
+  const _MyGamesButton({required this.count, required this.onTap});
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface2,
+      shape: StadiumBorder(side: BorderSide(color: AppColors.gold.withValues(alpha: 0.45))),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.vpn_key_rounded, size: 16, color: AppColors.gold),
+            const SizedBox(width: 6),
+            Text(count > 0 ? 'My Games ($count)' : 'My Games', style: AppTheme.body(13, weight: FontWeight.w800, color: AppColors.gold)),
+          ]),
         ),
       ),
     );

@@ -18,6 +18,7 @@ import 'kyc_screen.dart';
 import 'levels_sheet.dart';
 import 'rewards_panel.dart';
 import '../chat/live_chat_screen.dart';
+import '../games/my_games_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -158,6 +159,12 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                       toast(context, 'Invite link copied');
                     },
                   ),
+                _Tile(
+                  icon: Icons.vpn_key_rounded,
+                  title: 'My Games',
+                  subtitle: 'Your game usernames and passwords',
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyGamesScreen())),
+                ),
                 _Tile(
                   icon: Icons.support_agent_rounded,
                   title: 'Live Chat',

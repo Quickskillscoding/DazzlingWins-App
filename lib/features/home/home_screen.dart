@@ -4,6 +4,7 @@ import '../../core/api.dart';
 import '../../core/app_state.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../widgets/app_header.dart';
 import '../../widgets/ui.dart';
 import '../games/game_sheet.dart';
 import '../games/games_repo.dart';
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   final _rewardsKey = GlobalKey<RewardsPanelState>();
+  final _scroll = ScrollController();
   List<Map<String, dynamic>> _games = [];
   bool _gamesLoading = true;
 
@@ -30,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     _loadGames();
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
   Future<void> _loadGames() async {
@@ -66,24 +74,16 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             final p = s.progress;
             return CustomScrollView(
               physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              controller: _scroll,
               slivers: [
+                // Avatar + name at the top; sticky logo bar once scrolled (chat + bell in both).
+                AppHeaderSliver(controller: _scroll),
                 SliverSafeArea(
+                  top: false,
                   bottom: false,
                   sliver: SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
                     sliver: SliverList.list(children: [
-                      Row(children: [
-                        Image.asset('assets/brand/logo_mark.png', width: 40, height: 40),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('Welcome back', style: AppTheme.body(12, color: AppColors.muted)),
-                            Text(s.displayName, style: AppTheme.display(18), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          ]),
-                        ),
-                        _LevelPill(name: p.current.name),
-                      ]),
-                      const SizedBox(height: 18),
                       _BalanceHero(state: s),
                       const SizedBox(height: 16),
                       Row(children: [
@@ -137,23 +137,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<void> _open(Widget page) async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
     await AppState.instance.refreshWallet().catchError((_) {});
-  }
-}
-
-class _LevelPill extends StatelessWidget {
-  const _LevelPill({required this.name});
-  final String name;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(gradient: AppColors.goldGradient, borderRadius: BorderRadius.circular(99)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.workspace_premium_rounded, size: 16, color: Color(0xFF1A1200)),
-        const SizedBox(width: 4),
-        Text(name, style: AppTheme.body(12, weight: FontWeight.w800, color: const Color(0xFF1A1200))),
-      ]),
-    );
   }
 }
 

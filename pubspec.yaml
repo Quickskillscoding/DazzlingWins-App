@@ -29,6 +29,8 @@ dependencies:
   # Live Chat voice notes: record (AAC/M4A) and play them back.
   record: ^5.2.1
   just_audio: ^0.9.42
+  # In-app updater: opens the downloaded update with Android's installer.
+  open_filex: ^4.5.0
 
 # record 5.x still lists the old Linux implementation (record_linux 0.7), which no longer compiles
 # against the shared record interface and breaks the Android build too. Use the fixed one.

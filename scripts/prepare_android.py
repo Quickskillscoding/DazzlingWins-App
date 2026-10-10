@@ -8,7 +8,7 @@ committed, so it always matches the pinned Flutter version). Idempotent: safe to
   * release signing from android/key.properties (written by CI from repository secrets)
   * core library desugaring (required by flutter_local_notifications)
   * minSdk 23 (Android 6+, needed by the voice-note recorder)
-  * permissions: INTERNET, POST_NOTIFICATIONS, RECORD_AUDIO; backups off; cleartext (http) traffic off
+  * permissions: INTERNET, POST_NOTIFICATIONS, RECORD_AUDIO, REQUEST_INSTALL_PACKAGES; backups off; cleartext (http) traffic off
   * https <queries> so url_launcher can open links and the APK download
   * Google sign-in callback activity (scheme dazzlingwins://auth)
   * notification small icon and the dark brand launch background (no white flash)
@@ -153,6 +153,8 @@ def patch_manifest(path: pathlib.Path) -> None:
         '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n'
         # Live Chat voice notes. Asked for only when the player taps the microphone.
         '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+        # In-app updater: lets Android's installer open the update the app downloaded.
+        '    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n'
     )
     s = re.sub(r"(<manifest[^>]*>\s*)", lambda m: m.group(1) + perms, s, count=1)
     s = re.sub(r'android:label="[^"]*"', 'android:label="DazzlingWins"', s, count=1)
@@ -190,6 +192,10 @@ def patch_manifest(path: pathlib.Path) -> None:
         "        <intent>\n"
         '            <action android:name="android.intent.action.VIEW" />\n'
         '            <data android:scheme="https" />\n'
+        "        </intent>\n"
+        # Lets the app find a Custom Tabs browser, so Google sign-in opens inside the app.
+        "        <intent>\n"
+        '            <action android:name="android.support.customtabs.action.CustomTabsService" />\n'
         "        </intent>\n"
     )
     if "<queries>" in s:

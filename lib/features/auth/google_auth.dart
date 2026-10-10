@@ -11,7 +11,8 @@ import '../../core/api.dart';
 import '../../core/config.dart';
 import '../../core/session.dart';
 
-/// "Continue with Google" — runs the WEBSITE's own Google sign-in in the phone's browser, so bans,
+/// "Continue with Google" — runs the WEBSITE's own Google sign-in in a browser tab INSIDE the app
+/// (an Android Custom Tab: Google refuses to sign in inside a plain embedded web view), so bans,
 /// the admin block, login tracking and new-player emails apply exactly as on the site.
 ///
 /// 1. A random verifier is created and kept in secure storage (it never leaves the phone); only its
@@ -49,7 +50,12 @@ class GoogleAuth {
     _sub ??= _links.uriLinkStream.listen(_handle, onError: (_) {});
   }
 
-  /// Opens Google sign-in in the browser. The result arrives later through [onResult].
+  /// Opens Google sign-in on top of the app. The result arrives later through [onResult].
+  ///
+  /// The tab belongs to this app's own window, not to the browser: when the website hands the
+  /// one-time code back, Android returns to the app's main screen and closes the tab, so nothing
+  /// is left open in the phone's browser. Only a phone without a Custom Tabs browser falls back
+  /// to the normal browser.
   static Future<void> start() async {
     final verifier = _randomVerifier();
     await _storage.write(
@@ -57,8 +63,14 @@ class GoogleAuth {
       value: jsonEncode({'v': verifier, 't': DateTime.now().millisecondsSinceEpoch}),
     );
     final url = AppConfig.uri('/app-auth/google', {'challenge': _challenge(verifier)});
-    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
-    if (!ok) throw ApiException('Could not open the browser for Google sign-in.');
+    var ok = false;
+    try {
+      ok = await launchUrl(url, mode: LaunchMode.inAppBrowserView);
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (!ok) throw ApiException('Could not open Google sign-in.');
   }
 
   static Future<void> _handle(Uri uri) async {

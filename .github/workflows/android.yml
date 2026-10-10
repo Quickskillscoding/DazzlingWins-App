@@ -54,11 +54,7 @@ jobs:
           set -o pipefail
           if ! flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.log; then
             # Put the errors on the run's summary page, so they can be read without opening the log.
-            reason=$(grep -E '^ *error ' analyze.log | head -n 20 | cut -c1-400)
-            reason="${reason//'%'/'%25'}"
-            reason="${reason//$''/}"
-            reason="${reason//$'
-'/'%0A'}"
+            reason=$(grep -E '^ *error ' analyze.log | head -n 20 | cut -c1-400 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
             echo "::error title=Analyze failed::${reason:-See the analyze log.}"
             exit 1
           fi

@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/ui.dart';
+import '../deals/deals_screen.dart';
 import '../games/game_sheet.dart';
 import '../games/games_repo.dart';
 import '../profile/rewards_panel.dart';
@@ -21,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   final _rewardsKey = GlobalKey<RewardsPanelState>();
+  final _dealsKey = GlobalKey<DealsBannerState>();
   final _scroll = ScrollController();
   List<Map<String, dynamic>> _games = [];
   bool _gamesLoading = true;
@@ -56,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       AppState.instance.refreshAll(),
       _loadGames(),
       _rewardsKey.currentState?.reload() ?? Future<void>.value(),
+      _dealsKey.currentState?.reload() ?? Future<void>.value(),
     ]);
   }
 
@@ -93,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         _QuickAction(icon: Icons.sports_esports_rounded, label: 'Games', color: AppColors.warning, onTap: () => HomeShell.goTo(context, 1)),
                       ]),
                       const SizedBox(height: 18),
+                      DealsBanner(key: _dealsKey, onPlay: () => HomeShell.goTo(context, 1)),
                       _XpCard(progress: p, xp: s.xp),
                       const SizedBox(height: 8),
                       RewardsPanel(key: _rewardsKey),

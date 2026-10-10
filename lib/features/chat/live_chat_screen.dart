@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api.dart';
+import '../../core/session.dart';
 import '../../core/theme.dart';
 import '../../widgets/image_pick.dart';
 import '../../widgets/ui.dart';
@@ -62,6 +64,11 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
   ChatMessage? _replyTo;
   bool _showEmoji = false;
 
+  /// Team messages the player deleted. A player cannot remove an agent's message from the server,
+  /// so it is hidden on this phone instead (kept per player).
+  final Set<String> _hidden = <String>{};
+  static const _maxHidden = 500;
+
   /// The player re-opened the camera / attach / mic tools while there is text in the box.
   bool _toolsOpen = false;
 
@@ -78,6 +85,7 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _focus.addListener(_onFocus);
+    unawaited(_loadHidden());
     _load();
     _poll = Timer.periodic(_pollEvery, (_) {
       if (_foreground) _load(quiet: true);
@@ -394,8 +402,7 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
       items: [
         _menuItem('reply', Icons.reply_rounded, 'Reply'),
         if (m.body.isNotEmpty) _menuItem('copy', Icons.copy_rounded, 'Copy'),
-        // The server only lets a player delete their own messages.
-        if (m.mine) _menuItem('delete', Icons.delete_outline_rounded, 'Delete', color: AppColors.danger),
+        _menuItem('delete', Icons.delete_outline_rounded, 'Delete', color: AppColors.danger),
       ],
     );
     if (!mounted || choice == null) return;
@@ -427,7 +434,10 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Delete this message?', style: AppTheme.display(18)),
-        content: Text('It is removed from the chat for you and for our team.', style: AppTheme.body(14, color: AppColors.muted)),
+        content: Text(
+          m.mine ? 'It is removed from the chat for you and for our team.' : 'It is removed from the chat on this phone.',
+          style: AppTheme.body(14, color: AppColors.muted),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -439,6 +449,15 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
     );
     if (ok != true || !mounted) return;
     if (_playback.state.value.id == m.id) unawaited(_playback.stop());
+    if (!m.mine) {
+      // An agent's message: the server keeps it for the team, this phone stops showing it.
+      setState(() {
+        _hidden.add(m.id);
+        if (_replyTo?.id == m.id) _replyTo = null;
+      });
+      await _saveHidden();
+      return;
+    }
     setState(() {
       _messages = _messages.where((x) => x.id != m.id).toList();
       if (_replyTo?.id == m.id) _replyTo = null;
@@ -452,6 +471,29 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
     }
     _signature = '';
     unawaited(_load(quiet: true));
+  }
+
+  String get _hiddenKey => 'dw_chat_hidden_${Session.instance.userId ?? 'guest'}';
+
+  Future<void> _loadHidden() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getStringList(_hiddenKey) ?? const <String>[];
+      if (!mounted || stored.isEmpty) return;
+      setState(() => _hidden.addAll(stored));
+    } catch (_) {
+      // Storage unavailable: nothing is hidden.
+    }
+  }
+
+  Future<void> _saveHidden() async {
+    try {
+      final list = _hidden.toList(growable: false);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_hiddenKey, list.length <= _maxHidden ? list : list.sublist(list.length - _maxHidden));
+    } catch (_) {
+      // Still hidden for this run.
+    }
   }
 
   // ── Emoji ──────────────────────────────────────────────────────────────────
@@ -544,7 +586,7 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
 
   Widget _thread() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    final all = [..._messages, ..._pending];
+    final all = [..._messages.where((m) => !_hidden.contains(m.id)), ..._pending];
     if (all.isEmpty) {
       if (_error != null) return Center(child: ErrorRetry(message: _error!, onRetry: _load));
       return const Center(

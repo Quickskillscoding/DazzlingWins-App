@@ -18,6 +18,17 @@ Future<void> showGameSheet(BuildContext context, Map<String, dynamic> game) {
   );
 }
 
+/// Opens the Redeem window for one game: the same window, wording and server rules as the Redeem
+/// button on the game itself. [redeemInfo] is the answer of GET /api/game-accounts/redeem for it.
+/// Returns true when a redeem request was sent.
+Future<bool> showRedeemSheet(BuildContext context, Map<String, dynamic> game, Map<String, dynamic> redeemInfo) async {
+  final done = await showAppPopup<bool>(
+    context,
+    builder: (_) => _ScoreActionSheet(game: game, action: _ScoreAction.redeem, redeemCap: redeemInfo),
+  );
+  return done == true;
+}
+
 class _GameSheet extends StatefulWidget {
   const _GameSheet({required this.game});
   final Map<String, dynamic> game;

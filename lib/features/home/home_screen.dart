@@ -12,6 +12,7 @@ import '../games/games_repo.dart';
 import '../profile/rewards_panel.dart';
 import '../shell/home_shell.dart';
 import '../wallet/deposit_screen.dart';
+import '../wallet/redeem_screen.dart';
 import '../wallet/withdraw_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       Row(children: [
                         _QuickAction(icon: Icons.south_west_rounded, label: 'Deposit', color: AppColors.mint, onTap: () => _open(const DepositScreen())),
                         _QuickAction(icon: Icons.north_east_rounded, label: 'Withdraw', color: AppColors.primaryLight, onTap: () => _open(const WithdrawScreen())),
+                        _QuickAction(icon: Icons.savings_rounded, label: 'Redeem', color: AppColors.goldLight, onTap: () => _open(const RedeemScreen())),
                         _QuickAction(icon: Icons.casino_rounded, label: 'Spin', color: AppColors.gold, onTap: () => HomeShell.goTo(context, 2)),
                         _QuickAction(icon: Icons.sports_esports_rounded, label: 'Games', color: AppColors.warning, onTap: () => HomeShell.goTo(context, 1)),
                       ]),
@@ -198,7 +200,7 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 3),
         child: Panel(
           onTap: onTap,
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -211,7 +213,11 @@ class _QuickAction extends StatelessWidget {
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 8),
-            Text(label, style: AppTheme.body(12, weight: FontWeight.w800)),
+            // Five actions share the row: the label shrinks instead of being cut off on narrow phones.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: AppTheme.body(12, weight: FontWeight.w800), maxLines: 1)),
+            ),
           ]),
         ),
       ),

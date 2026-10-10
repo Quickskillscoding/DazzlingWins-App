@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import 'deposit_screen.dart';
+import 'redeem_screen.dart';
 import 'withdraw_screen.dart';
 
 /// Wallet tab: both balances and the same five histories as the website (/api/wallet/history).
@@ -86,6 +87,8 @@ class _WalletScreenState extends State<WalletScreen> with AutomaticKeepAliveClie
                         const SizedBox(width: 12),
                         Expanded(child: PrimaryButton(label: 'Withdraw', icon: Icons.north_east_rounded, onPressed: () => _open(const WithdrawScreen()))),
                       ]),
+                      const SizedBox(height: 12),
+                      GhostButton(label: 'Redeem game score', icon: Icons.savings_outlined, onPressed: () => _open(const RedeemScreen())),
                       const SizedBox(height: 22),
                       Text('History', style: AppTheme.display(18)),
                       const SizedBox(height: 12),

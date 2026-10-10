@@ -19,6 +19,7 @@ import 'levels_sheet.dart';
 import 'rewards_panel.dart';
 import '../chat/live_chat_screen.dart';
 import '../games/my_games_screen.dart';
+import '../help/faq_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -170,6 +171,12 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   title: 'Live Chat',
                   subtitle: 'Chat with our agents',
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveChatScreen())),
+                ),
+                _Tile(
+                  icon: Icons.help_outline_rounded,
+                  title: 'Help & FAQ',
+                  subtitle: 'Answers to common questions',
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FaqScreen())),
                 ),
                 _Tile(
                   icon: Icons.system_update_rounded,

@@ -17,8 +17,8 @@ Future<XFile?> pickPhoto(BuildContext context, {bool allowCamera = true, ImageSo
   } else if (!allowCamera) {
     from = ImageSource.gallery;
   } else {
-    final chosen = await showModalBottomSheet<ImageSource>(
-      context: context,
+    final chosen = await showAppPopup<ImageSource>(
+      context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(

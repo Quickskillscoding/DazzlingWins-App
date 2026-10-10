@@ -3,12 +3,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart';
+import '../widgets/ui.dart';
 import 'theme.dart';
 
 /// In-app updater. Asks the website (/api/app/version) for the newest published build; when it
-/// is newer than this install, shows an update sheet. "Update now" downloads the signed APK from
+/// is newer than this install, shows an update pop-up. The pop-up text is fixed in the app: it never
+/// prints the release description (that is developer text, not something for players). "Update now" downloads the signed APK from
 /// the official release; Android then installs it over this app (same signing key, data kept).
-/// Builds below the server's minBuild cannot dismiss the sheet.
+/// Builds below the server's minBuild cannot dismiss the pop-up.
 class Updater {
   Updater._();
   static bool _shownThisSession = false;
@@ -34,7 +36,7 @@ class Updater {
       }
       if (!context.mounted) return;
       _shownThisSession = true;
-      await _show(context, version: strOf(data['version']), notes: strOf(data['notes']), apkUrl: apkUrl, force: current < minBuild);
+      await _show(context, version: strOf(data['version']), apkUrl: apkUrl, force: current < minBuild);
     } catch (_) {
       if (userInitiated && context.mounted) _snack(context, 'Could not check for updates. Try again later.');
     }
@@ -44,12 +46,10 @@ class Updater {
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(text)));
   }
 
-  static Future<void> _show(BuildContext context, {required String version, required String notes, required String apkUrl, required bool force}) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isDismissible: !force,
-      enableDrag: !force,
-      showDragHandle: !force,
+  static Future<void> _show(BuildContext context, {required String version, required String apkUrl, required bool force}) {
+    return showAppPopup<void>(
+      context,
+      dismissible: !force,
       builder: (ctx) => PopScope(
         canPop: !force,
         child: SafeArea(
@@ -69,15 +69,6 @@ class Updater {
               const SizedBox(height: 6),
               Text('Version $version is ready with the latest features and fixes.',
                   style: AppTheme.body(14, color: AppColors.muted), textAlign: TextAlign.center),
-              if (notes.trim().isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 160),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(16)),
-                  child: SingleChildScrollView(child: Text(notes.trim(), style: AppTheme.body(13, color: AppColors.muted))),
-                ),
-              ],
               const SizedBox(height: 20),
               FilledButton.icon(
                 style: FilledButton.styleFrom(

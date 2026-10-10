@@ -7,10 +7,8 @@ import '../../widgets/ui.dart';
 
 /// Level perks — the admin-editable table from /api/xp-levels (same as the website's dialog).
 Future<void> showLevelsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppPopup<void>(
+    context,
     builder: (_) {
       final s = AppState.instance;
       final current = s.progress.current.level;

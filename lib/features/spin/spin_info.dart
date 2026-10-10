@@ -123,10 +123,8 @@ List<SpinHistoryEntry> filterSpinHistory(List<SpinHistoryEntry> all, Duration wi
 
 /// Opens the player's Spin History.
 Future<void> showSpinHistorySheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppPopup<void>(
+    context,
     builder: (_) => const _SpinHistorySheet(),
   );
 }

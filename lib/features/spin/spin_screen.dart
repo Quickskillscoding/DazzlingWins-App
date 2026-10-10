@@ -116,8 +116,8 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
   }
 
   void _askKyc(String message) {
-    showModalBottomSheet<void>(
-      context: context,
+    showAppPopup<void>(
+      context,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),

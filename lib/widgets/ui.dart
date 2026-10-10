@@ -265,6 +265,67 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
   }
 }
 
+/// The app's pop-up window: a card in the MIDDLE of the screen (never a sheet at the bottom, where
+/// the phone's navigation buttons cover its actions). Tap outside or press back to close it, unless
+/// [dismissible] is false. It stays clear of the status bar, the navigation bar and the keyboard,
+/// and its content scrolls when it is taller than the screen.
+Future<T?> showAppPopup<T>(BuildContext context, {required WidgetBuilder builder, bool dismissible = true, double maxWidth = 460}) {
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: dismissible,
+    barrierLabel: 'Close',
+    barrierColor: Colors.black.withValues(alpha: 0.64),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (ctx, _, __) => _AppPopup(maxWidth: maxWidth, child: Builder(builder: builder)),
+    transitionsBuilder: (ctx, animation, _, child) {
+      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(scale: Tween<double>(begin: 0.94, end: 1).animate(curved), child: child),
+      );
+    },
+  );
+}
+
+class _AppPopup extends StatelessWidget {
+  const _AppPopup({required this.maxWidth, required this.child});
+  final double maxWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      child: AnimatedPadding(
+        // Lift the card above the keyboard.
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboard),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Material(
+              color: AppColors.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26), side: const BorderSide(color: AppColors.stroke)),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 20),
+                // The keyboard is already handled above: the content must not add room for it again.
+                child: MediaQuery.removeViewInsets(
+                  context: context,
+                  removeBottom: true,
+                  // Always the full card width, however narrow the content is.
+                  child: SizedBox(width: double.infinity, child: child),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 void toast(BuildContext context, String message, {bool error = false}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return;

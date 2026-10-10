@@ -110,7 +110,8 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: DazzlingWins 1.0.${{ github.run_number }}
-          body: ${{ github.event.head_commit.message || 'New version of the DazzlingWins app.' }}
+          # Fixed text. Never the commit message: that is developer text and must not reach players.
+          body: New version of the DazzlingWins app with the latest features and fixes.
           make_latest: 'true'
           files: |
             dist/DazzlingWins.apk

@@ -12,10 +12,8 @@ import 'games_repo.dart';
 /// One game: create the account, see the login, add score, redeem, transfer and play.
 /// Every action is the website's own endpoint, so caps, KYC, XP rules and review flow are identical.
 Future<void> showGameSheet(BuildContext context, Map<String, dynamic> game) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppPopup<void>(
+    context,
     builder: (_) => _GameSheet(game: game),
   );
 }
@@ -389,10 +387,8 @@ class _ReadyAccount extends StatelessWidget {
   }
 
   Future<void> _scoreAction(BuildContext context, _ScoreAction action) async {
-    final done = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+    final done = await showAppPopup<bool>(
+      context,
       builder: (_) => _ScoreActionSheet(game: game, action: action, redeemCap: redeemCap),
     );
     if (done == true) onChanged();

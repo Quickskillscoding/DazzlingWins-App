@@ -1,4 +1,5 @@
 import 'package:dazzlingwins/core/format.dart';
+import 'package:dazzlingwins/features/auth/auth_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -20,6 +21,23 @@ void main() {
     test('compact integers', () {
       expect(compactInt(15000), '15,000');
       expect(compactInt(999), '999');
+    });
+  });
+
+  group('sign-up password rules', () {
+    test('needs 8+ chars with upper, lower, number and special', () {
+      expect(PasswordStrength.of('').score, 0);
+      expect(PasswordStrength.of('password').meetsRules, isFalse);
+      expect(PasswordStrength.of('Password1').meetsRules, isFalse);
+      expect(PasswordStrength.of('Pass1!').meetsRules, isFalse);
+      expect(PasswordStrength.of('Password1!').meetsRules, isTrue);
+    });
+
+    test('labels weak to strong', () {
+      expect(PasswordStrength.of('abc').label, 'Weak');
+      expect(PasswordStrength.of('abcdefgh1').label, 'Fair');
+      expect(PasswordStrength.of('Abcdefgh1').label, 'Good');
+      expect(PasswordStrength.of('Abcdefgh1!').label, 'Strong');
     });
   });
 }

@@ -7,7 +7,8 @@ committed, so it always matches the pinned Flutter version). Idempotent: safe to
   * Android Gradle Plugin / Gradle / Kotlin raised to versions current AndroidX libraries need
   * release signing from android/key.properties (written by CI from repository secrets)
   * core library desugaring (required by flutter_local_notifications)
-  * permissions: INTERNET, POST_NOTIFICATIONS; backups off; cleartext (http) traffic off
+  * minSdk 23 (Android 6+, needed by the voice-note recorder)
+  * permissions: INTERNET, POST_NOTIFICATIONS, RECORD_AUDIO; backups off; cleartext (http) traffic off
   * https <queries> so url_launcher can open links and the APK download
   * Google sign-in callback activity (scheme dazzlingwins://auth)
   * notification small icon and the dark brand launch background (no white flash)
@@ -27,6 +28,8 @@ APP_ID = "com.dazzlingwins.app"
 AGP_VERSION = "8.6.1"
 GRADLE_VERSION = "8.7"
 KOTLIN_VERSION = "1.9.24"
+# Android 6.0. The voice-note recorder (record) needs it; Flutter's default is 21.
+MIN_SDK = 23
 BG = "#FF07060E"
 
 
@@ -40,6 +43,7 @@ def patch_groovy(path: pathlib.Path) -> None:
     if "DW_PATCHED" in s:
         return
     s = re.sub(r'applicationId\s*=?\s*"[^"]+"', f'applicationId = "{APP_ID}"', s, count=1)
+    s = re.sub(r"minSdk(Version)?\s*=?\s*flutter\.minSdkVersion", f"minSdk = {MIN_SDK}", s, count=1)
     loader = (
         "// DW_PATCHED: release signing from key.properties (written by CI)\n"
         "def keystoreProperties = new Properties()\n"
@@ -90,6 +94,7 @@ def patch_kts(path: pathlib.Path) -> None:
     if "DW_PATCHED" in s:
         return
     s = re.sub(r'applicationId\s*=\s*"[^"]+"', f'applicationId = "{APP_ID}"', s, count=1)
+    s = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", f"minSdk = {MIN_SDK}", s, count=1)
     header = (
         "// DW_PATCHED: release signing from key.properties (written by CI)\n"
         "val keystoreProperties = java.util.Properties()\n"
@@ -142,6 +147,8 @@ def patch_manifest(path: pathlib.Path) -> None:
         "    <!-- DW_PATCHED -->\n"
         '    <uses-permission android:name="android.permission.INTERNET" />\n'
         '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n'
+        # Live Chat voice notes. Asked for only when the player taps the microphone.
+        '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
     )
     s = re.sub(r"(<manifest[^>]*>\s*)", lambda m: m.group(1) + perms, s, count=1)
     s = re.sub(r'android:label="[^"]*"', 'android:label="DazzlingWins"', s, count=1)

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../core/app_state.dart';
 import '../core/notification_inbox.dart';
 import '../core/theme.dart';
-import '../features/profile/support_chat_screen.dart';
+import '../features/chat/live_chat_screen.dart';
 import 'notifications_popover.dart';
 
 /// The signed-in app header, pinned at the top of a scroll view.
@@ -118,8 +118,8 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
               const SizedBox(width: 12),
               _RoundAction(
                 icon: Icons.chat_bubble_outline_rounded,
-                tooltip: 'Support chat',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportChatScreen())),
+                tooltip: 'Live Chat',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveChatScreen())),
               ),
               const SizedBox(width: 10),
               const _BellAction(),

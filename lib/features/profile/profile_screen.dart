@@ -17,7 +17,7 @@ import '../auth/auth_screen.dart';
 import 'kyc_screen.dart';
 import 'levels_sheet.dart';
 import 'rewards_panel.dart';
-import 'support_chat_screen.dart';
+import '../chat/live_chat_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -160,9 +160,9 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   ),
                 _Tile(
                   icon: Icons.support_agent_rounded,
-                  title: 'Live support',
-                  subtitle: 'Chat with our team',
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportChatScreen())),
+                  title: 'Live Chat',
+                  subtitle: 'Chat with our agents',
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveChatScreen())),
                 ),
                 _Tile(
                   icon: Icons.system_update_rounded,

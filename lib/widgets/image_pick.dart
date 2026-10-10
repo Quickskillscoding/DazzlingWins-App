@@ -9,10 +9,13 @@ import 'ui.dart';
 
 /// Picks a photo (camera or gallery), downsized/compressed so it stays well under the server's
 /// 8 MB limit. Returns null when cancelled or too large.
-Future<XFile?> pickPhoto(BuildContext context, {bool allowCamera = true}) async {
-  final ImageSource source;
-  if (!allowCamera) {
-    source = ImageSource.gallery;
+/// Pass [source] to open the camera or the gallery directly, without asking.
+Future<XFile?> pickPhoto(BuildContext context, {bool allowCamera = true, ImageSource? source}) async {
+  final ImageSource from;
+  if (source != null) {
+    from = source;
+  } else if (!allowCamera) {
+    from = ImageSource.gallery;
   } else {
     final chosen = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -33,10 +36,10 @@ Future<XFile?> pickPhoto(BuildContext context, {bool allowCamera = true}) async 
       ),
     );
     if (chosen == null) return null;
-    source = chosen;
+    from = chosen;
   }
   try {
-    final file = await ImagePicker().pickImage(source: source, maxWidth: 2000, maxHeight: 2000, imageQuality: 85);
+    final file = await ImagePicker().pickImage(source: from, maxWidth: 2000, maxHeight: 2000, imageQuality: 85);
     if (file == null) return null;
     final size = await File(file.path).length();
     if (size > AppConfig.maxUploadBytes) {

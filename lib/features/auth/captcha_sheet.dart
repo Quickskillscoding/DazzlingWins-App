@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/theme.dart';
+import '../../widgets/ui.dart';
 
 /// Runs the website's Cloudflare Turnstile check (/app-captcha) and returns its single-use token.
 /// Only the DazzlingWins origin may load in this view; the token comes back through a JS channel.

@@ -151,7 +151,7 @@ class ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final m = message;
     final mine = m.mine;
-    final maxWidth = MediaQuery.of(context).size.width * 0.78;
+    final maxWidth = MediaQuery.of(context).size.width * 0.82;
     final timeColor = Colors.white.withValues(alpha: mine ? 0.72 : 0.5);
 
     final bubble = Container(

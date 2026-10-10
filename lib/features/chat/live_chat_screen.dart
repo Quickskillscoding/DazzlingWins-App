@@ -62,6 +62,9 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
   ChatMessage? _replyTo;
   bool _showEmoji = false;
 
+  /// The player re-opened the camera / attach / mic tools while there is text in the box.
+  bool _toolsOpen = false;
+
   AudioRecorder? _recorder;
   bool _recording = false;
   bool _recorderBusy = false;
@@ -636,16 +639,45 @@ class _LiveChatScreenState extends State<LiveChatScreen> with WidgetsBindingObse
   Widget _inputRow() {
     OutlineInputBorder border(Color color) => OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: color));
     return Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-      _ToolButton(icon: Icons.photo_camera_outlined, tooltip: 'Take a photo', onTap: () => _sendPhoto(ImageSource.camera)),
-      _ToolButton(icon: Icons.attach_file_rounded, tooltip: 'Attach a photo', onTap: () => _sendPhoto(ImageSource.gallery)),
-      _ToolButton(icon: Icons.mic_none_rounded, tooltip: 'Record a voice message', onTap: _startRecording),
+      // While the player is typing, the three tools fold into one "+" so the message box gets
+      // the full width. Tapping "+" brings them back.
+      ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _input,
+        builder: (context, value, _) {
+          final folded = value.text.isNotEmpty && !_toolsOpen;
+          return AnimatedSize(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOut,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: folded
+                  ? [
+                      _ToolButton(
+                        icon: Icons.add_circle_outline_rounded,
+                        tooltip: 'Photo, camera or voice message',
+                        onTap: () => setState(() => _toolsOpen = true),
+                      ),
+                    ]
+                  : [
+                      _ToolButton(icon: Icons.photo_camera_outlined, tooltip: 'Take a photo', onTap: () => _sendPhoto(ImageSource.camera)),
+                      _ToolButton(icon: Icons.attach_file_rounded, tooltip: 'Attach a photo', onTap: () => _sendPhoto(ImageSource.gallery)),
+                      _ToolButton(icon: Icons.mic_none_rounded, tooltip: 'Record a voice message', onTap: _startRecording),
+                    ],
+            ),
+          );
+        },
+      ),
       const SizedBox(width: 2),
       Expanded(
         child: TextField(
           controller: _input,
           focusNode: _focus,
+          onChanged: (_) {
+            if (_toolsOpen) setState(() => _toolsOpen = false);
+          },
           minLines: 1,
-          maxLines: 5,
+          maxLines: 6,
           maxLength: kMaxChatTextLength,
           textCapitalization: TextCapitalization.sentences,
           keyboardType: TextInputType.multiline,

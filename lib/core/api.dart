@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'config.dart';
 import 'session.dart';
@@ -20,6 +21,53 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// MIME type of an upload, decided from the file's first bytes (the same check the server makes),
+/// falling back to its extension. Null when unknown: the part is then sent untyped.
+String? sniffUploadType(List<int> head, String path) {
+  bool at(int offset, List<int> sig) {
+    if (head.length < offset + sig.length) return false;
+    for (var i = 0; i < sig.length; i++) {
+      if (head[offset + i] != sig[i]) return false;
+    }
+    return true;
+  }
+
+  if (at(0, const [0xFF, 0xD8, 0xFF])) return 'image/jpeg';
+  if (at(0, const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) return 'image/png';
+  if (at(0, const [0x52, 0x49, 0x46, 0x46]) && at(8, const [0x57, 0x45, 0x42, 0x50])) return 'image/webp';
+  if (at(0, const [0x47, 0x49, 0x46, 0x38])) return 'image/gif';
+  if (at(0, const [0x1A, 0x45, 0xDF, 0xA3])) return 'audio/webm';
+  if (at(4, const [0x66, 0x74, 0x79, 0x70])) return 'audio/mp4'; // "ftyp": M4A voice note
+  final dot = path.lastIndexOf('.');
+  switch (dot < 0 ? '' : path.substring(dot + 1).toLowerCase()) {
+    case 'jpg' || 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'webm':
+      return 'audio/webm';
+    case 'm4a' || 'mp4':
+      return 'audio/mp4';
+  }
+  return null;
+}
+
+/// [sniffUploadType] for a file on disk.
+Future<MediaType?> uploadMediaType(String path) async {
+  var head = const <int>[];
+  try {
+    head = await File(path).openRead(0, 16).fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk));
+  } catch (_) {
+    // Unreadable: decide by extension.
+  }
+  final type = sniffUploadType(head, path);
+  return type == null ? null : MediaType.parse(type);
 }
 
 /// One file in a multipart upload.
@@ -71,7 +119,9 @@ class ApiClient {
       request.headers.addAll(_headers(json: false));
       request.fields.addAll(fields);
       for (final f in files) {
-        request.files.add(await http.MultipartFile.fromPath(f.field, f.path, filename: f.filename));
+        // Label the file with its real type. Without this every upload goes out as
+        // application/octet-stream, which the website's storage refuses.
+        request.files.add(await http.MultipartFile.fromPath(f.field, f.path, filename: f.filename, contentType: await uploadMediaType(f.path)));
       }
       final streamed = await _http.send(request).timeout(AppConfig.uploadTimeout);
       return http.Response.fromStream(streamed);

@@ -277,7 +277,7 @@ Future<T?> showAppPopup<T>(BuildContext context, {required WidgetBuilder builder
     barrierColor: Colors.black.withValues(alpha: 0.64),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (ctx, _, __) => _AppPopup(maxWidth: maxWidth, child: Builder(builder: builder)),
-    transitionsBuilder: (ctx, animation, _, child) {
+    transitionBuilder: (ctx, animation, _, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
       return FadeTransition(
         opacity: curved,

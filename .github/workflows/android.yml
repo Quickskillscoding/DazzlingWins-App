@@ -80,10 +80,19 @@ jobs:
 
       - name: Build release APK
         run: |
-          flutter build apk --release \
+          set -o pipefail
+          if ! flutter build apk --release \
             --build-name=1.0.${{ github.run_number }} \
             --build-number=${{ github.run_number }} \
-            --obfuscate --split-debug-info=build/symbols
+            --obfuscate --split-debug-info=build/symbols 2>&1 | tee build.log; then
+            # Put the reason on the run's summary page, so it can be read without opening the log.
+            reason=$( { awk '/What went wrong/{f=1} /\* Try:/{f=0} f' build.log | head -n 30; grep -E '^e: |error:|Error: ' build.log | head -n 15; } | cut -c1-400 )
+            reason="${reason//'%'/'%25'}"
+            reason="${reason//$'\r'/}"
+            reason="${reason//$'\n'/'%0A'}"
+            echo "::error title=Android build failed::${reason:-See the build log.}"
+            exit 1
+          fi
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk dist/DazzlingWins.apk
           sha256sum dist/DazzlingWins.apk | tee dist/DazzlingWins.apk.sha256

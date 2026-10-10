@@ -30,6 +30,8 @@ GRADLE_VERSION = "8.7"
 KOTLIN_VERSION = "1.9.24"
 # Android 6.0. The voice-note recorder (record) needs it; Flutter's default is 21.
 MIN_SDK = 23
+# Current AndroidX libraries (pulled in by the audio plugins) need to be compiled against API 35.
+COMPILE_SDK = 35
 BG = "#FF07060E"
 
 
@@ -44,6 +46,7 @@ def patch_groovy(path: pathlib.Path) -> None:
         return
     s = re.sub(r'applicationId\s*=?\s*"[^"]+"', f'applicationId = "{APP_ID}"', s, count=1)
     s = re.sub(r"minSdk(Version)?\s*=?\s*flutter\.minSdkVersion", f"minSdk = {MIN_SDK}", s, count=1)
+    s = re.sub(r"compileSdk(Version)?\s*=?\s*flutter\.compileSdkVersion", f"compileSdk = {COMPILE_SDK}", s, count=1)
     loader = (
         "// DW_PATCHED: release signing from key.properties (written by CI)\n"
         "def keystoreProperties = new Properties()\n"
@@ -95,6 +98,7 @@ def patch_kts(path: pathlib.Path) -> None:
         return
     s = re.sub(r'applicationId\s*=\s*"[^"]+"', f'applicationId = "{APP_ID}"', s, count=1)
     s = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", f"minSdk = {MIN_SDK}", s, count=1)
+    s = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", f"compileSdk = {COMPILE_SDK}", s, count=1)
     header = (
         "// DW_PATCHED: release signing from key.properties (written by CI)\n"
         "val keystoreProperties = java.util.Properties()\n"

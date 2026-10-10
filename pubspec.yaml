@@ -29,6 +29,11 @@ dependencies:
   record: ^5.2.1
   just_audio: ^0.9.42
 
+# record 5.x still lists the old Linux implementation (record_linux 0.7), which no longer compiles
+# against the shared record interface and breaks the Android build too. Use the fixed one.
+dependency_overrides:
+  record_linux: ^1.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

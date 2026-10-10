@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'core/api.dart';
 import 'core/app_state.dart';
+import 'core/notification_inbox.dart';
 import 'core/session.dart';
 import 'core/theme.dart';
 import 'features/auth/auth_screen.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
   // Session expired for good (refresh refused / banned): back to sign-in from anywhere.
   ApiClient.instance.onSignedOut = () {
     AppState.instance.reset();
+    NotificationInbox.instance.reset();
     navigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
       (_) => false,

@@ -7,6 +7,7 @@ import '../../core/api.dart';
 import '../../core/app_state.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
+import '../../core/notification_inbox.dart';
 import '../../core/notifications.dart';
 import '../../core/session.dart';
 import '../../core/theme.dart';
@@ -74,6 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     await AppNotifications.clearOnSignOut();
     await Session.instance.clear();
     AppState.instance.reset();
+    NotificationInbox.instance.reset();
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const AuthScreen()), (_) => false);
   }

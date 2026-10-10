@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/app_state.dart';
+import '../../core/notification_inbox.dart';
 import '../../core/notifications.dart';
 import '../../core/theme.dart';
 import '../../core/updater.dart';
@@ -35,6 +36,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       await AppNotifications.init();
       await AppNotifications.requestPermission();
       unawaited(AppNotifications.checkCampaigns().catchError((_) => 0));
+      unawaited(NotificationInbox.instance.refresh());
       if (mounted) unawaited(Updater.check(context));
     });
   }
@@ -50,6 +52,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       unawaited(AppState.instance.refreshWallet().catchError((_) {}));
       unawaited(AppNotifications.checkCampaigns().catchError((_) => 0));
+      unawaited(NotificationInbox.instance.refresh());
     }
   }
 

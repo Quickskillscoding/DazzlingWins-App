@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../core/api.dart';
 import '../core/app_state.dart';
-import '../core/format.dart';
+import '../core/notification_inbox.dart';
 import '../core/theme.dart';
 import '../features/profile/support_chat_screen.dart';
-import 'ui.dart';
+import 'notifications_popover.dart';
 
 /// The signed-in app header, pinned at the top of a scroll view.
 ///  * At the top of the page: the player's avatar and name, with chat and notification buttons.
@@ -123,11 +122,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportChatScreen())),
               ),
               const SizedBox(width: 10),
-              _RoundAction(
-                icon: Icons.notifications_none_rounded,
-                tooltip: 'Notifications',
-                onTap: () => showNotificationsSheet(context),
-              ),
+              const _BellAction(),
             ]),
           ),
         );
@@ -216,100 +211,48 @@ class _RoundAction extends StatelessWidget {
   }
 }
 
-/// The player's recent promo notifications (last 30 days), same source as the system notifications.
-Future<void> showNotificationsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => const _NotificationsSheet(),
-  );
-}
-
-class _NotificationsSheet extends StatefulWidget {
-  const _NotificationsSheet();
-  @override
-  State<_NotificationsSheet> createState() => _NotificationsSheetState();
-}
-
-class _NotificationsSheetState extends State<_NotificationsSheet> {
-  List<Map<String, dynamic>>? _items;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _error = null);
-    try {
-      final since = DateTime.now().toUtc().subtract(const Duration(days: 30)).toIso8601String();
-      final d = await ApiClient.instance.get('/api/app/notifications', query: {'since': since});
-      if (mounted) setState(() => _items = listOf(d['notifications']).reversed.toList());
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
-    }
-  }
+/// The bell: shows how many notifications are unread and opens the notification window under itself.
+class _BellAction extends StatelessWidget {
+  const _BellAction();
 
   @override
   Widget build(BuildContext context) {
-    final items = _items;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: Text('Notifications', style: AppTheme.display(20)),
-        ),
-        Flexible(
-          child: _error != null
-              ? ErrorRetry(message: _error!, onRetry: _load)
-              : items == null
-                  ? const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
-                  : items.isEmpty
-                      ? const EmptyState(
-                          icon: Icons.notifications_none_rounded,
-                          title: 'No notifications yet',
-                          subtitle: 'Offers and bonuses from DazzlingWins show up here.',
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) {
-                            final n = items[i];
-                            return Panel(
-                              padding: const EdgeInsets.all(14),
-                              radius: 18,
-                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.14), shape: BoxShape.circle),
-                                  child: const Icon(Icons.card_giftcard_rounded, color: AppColors.gold, size: 20),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(strOf(n['title'], 'New offer for you'), style: AppTheme.body(14, weight: FontWeight.w800)),
-                                    if (strOf(n['body']).isNotEmpty) ...[
-                                      const SizedBox(height: 3),
-                                      Text(strOf(n['body']), style: AppTheme.body(13, color: AppColors.muted, height: 1.35)),
-                                    ],
-                                    const SizedBox(height: 6),
-                                    Text(relativeTime(n['at']), style: AppTheme.body(11, color: AppColors.faint)),
-                                  ]),
-                                ),
-                              ]),
-                            );
-                          },
-                        ),
-        ),
-      ]),
+    return ListenableBuilder(
+      listenable: NotificationInbox.instance,
+      builder: (context, _) {
+        final unread = NotificationInbox.instance.unreadCount;
+        return Stack(clipBehavior: Clip.none, children: [
+          // Builder: the popover is anchored to the button itself, not to the badge around it.
+          Builder(
+            builder: (anchor) => _RoundAction(
+              icon: unread > 0 ? Icons.notifications_active_outlined : Icons.notifications_none_rounded,
+              tooltip: 'Notifications',
+              onTap: () => showNotificationsPopover(anchor),
+            ),
+          ),
+          if (unread > 0)
+            Positioned(
+              top: -3,
+              right: -3,
+              child: IgnorePointer(
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 19, minHeight: 19),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: AppColors.bg, width: 2),
+                  ),
+                  child: Text(
+                    unread > 9 ? '9+' : '$unread',
+                    style: AppTheme.body(10, weight: FontWeight.w800, color: Colors.white, height: 1.1),
+                  ),
+                ),
+              ),
+            ),
+        ]);
+      },
     );
   }
 }

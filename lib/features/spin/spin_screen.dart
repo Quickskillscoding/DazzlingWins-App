@@ -10,6 +10,7 @@ import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import '../profile/kyc_screen.dart';
 import '../wallet/deposit_screen.dart';
+import 'spin_info.dart';
 
 /// Same wheel as the website: five cash slices in this exact order (lib/spin-rules.ts
 /// SPIN_WHEEL_PRIZES). The SERVER draws the slice, credits the Bonus Wallet and enforces every
@@ -168,7 +169,10 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 130),
               children: [
-                Text('Spin & Win', style: AppTheme.display(28)),
+                Row(children: [
+                  Expanded(child: Text('Spin & Win', style: AppTheme.display(28))),
+                  _HistoryButton(onTap: () => showSpinHistorySheet(context)),
+                ]),
                 const SizedBox(height: 4),
                 Text('One free spin every 24 hours. Every slice pays real Bonus Wallet cash.', style: AppTheme.body(13, color: AppColors.muted)),
                 const SizedBox(height: 16),
@@ -252,9 +256,40 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 14),
                 if (s.lastFreeSpinAt != null)
                   Text('Last free spin: ${shortDateTime(s.lastFreeSpinAt)}', style: AppTheme.body(12, color: AppColors.faint), textAlign: TextAlign.center),
+                const SizedBox(height: 22),
+                const SpinRulesCard(),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// "Spin History" pill next to the page title.
+class _HistoryButton extends StatelessWidget {
+  const _HistoryButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface2,
+      shape: StadiumBorder(side: BorderSide(color: AppColors.gold.withValues(alpha: 0.45))),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.history_rounded, size: 17, color: AppColors.gold),
+            const SizedBox(width: 6),
+            Text('Spin History', style: AppTheme.body(13, weight: FontWeight.w800, color: AppColors.gold)),
+          ]),
         ),
       ),
     );

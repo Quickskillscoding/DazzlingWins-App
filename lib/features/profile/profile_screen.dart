@@ -20,6 +20,7 @@ import 'rewards_panel.dart';
 import '../chat/live_chat_screen.dart';
 import '../games/my_games_screen.dart';
 import '../help/faq_screen.dart';
+import '../spin/spin_info.dart' show kSpinKycRequired;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -144,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                 _Tile(
                   icon: Icons.verified_user_outlined,
                   title: 'Account verification',
-                  subtitle: s.kycVerified ? 'Verified' : 'Required to spin — earns 350 XP',
+                  subtitle: s.kycVerified ? 'Verified' : (kSpinKycRequired ? 'Required to spin — earns 350 XP' : 'Verify your account — earns 350 XP'),
                   onTap: () async {
                     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KycScreen()));
                     await _refresh();

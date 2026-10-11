@@ -14,7 +14,8 @@ import 'spin_info.dart';
 
 /// Same wheel as the website: five cash slices in this exact order (lib/spin-rules.ts
 /// SPIN_WHEEL_PRIZES). The SERVER draws the slice, credits the Bonus Wallet and enforces every
-/// rule (24 h cooldown, 5 per cycle, $5 deposit unlock, $1 extra spin, mandatory KYC).
+/// rule (24 h cooldown, 5 per cycle, $5 deposit unlock, $1 extra spin, and KYC when the website
+/// has that rule switched on).
 const List<int> kSpinPrizes = [1, 4, 2, 5, 3];
 
 class SpinScreen extends StatefulWidget {

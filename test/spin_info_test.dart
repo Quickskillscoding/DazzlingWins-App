@@ -45,6 +45,8 @@ void main() {
     final text = kSpinRules.map((r) => r.text).join(' ');
     expect(text, contains('One free spin every 24 hours for 5 days.'));
     expect(text, contains('within 72 hours'));
-    expect(text, contains('KYC'));
+    // The KYC line follows the switch (off for now).
+    expect(text.contains('KYC'), kSpinKycRequired);
+    expect(kSpinKycRequired, isFalse);
   });
 }

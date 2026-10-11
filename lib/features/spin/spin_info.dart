@@ -12,6 +12,11 @@ const int kFreeSpinUnlockDeposit = 5;
 const int kPaidExtraSpinPrice = 1;
 const int kSpinBonusTtlHours = 72;
 
+/// Whether the rules card says KYC is needed to spin. OFF for now, like the website's
+/// SPIN_KYC_REQUIRED. The server decides who may spin; if it asks for KYC again, the app's
+/// "Verify to spin" pop-up still appears. Set to true to show the rule again.
+const bool kSpinKycRequired = false;
+
 /// The rules of the wheel, as plain sentences.
 const List<({IconData icon, String text})> kSpinRules = [
   (icon: Icons.schedule_rounded, text: 'One free spin every 24 hours for $kFreeSpinCycleDays days.'),
@@ -30,7 +35,7 @@ const List<({IconData icon, String text})> kSpinRules = [
     icon: Icons.hourglass_bottom_rounded,
     text: 'Spin winnings must be used within $kSpinBonusTtlHours hours. Any unused spin bonus then expires from your Bonus Wallet.',
   ),
-  (icon: Icons.verified_user_outlined, text: 'Your account must be verified (KYC) before you can spin.'),
+  if (kSpinKycRequired) (icon: Icons.verified_user_outlined, text: 'Your account must be verified (KYC) before you can spin.'),
 ];
 
 /// "Spin More, Win More!" rules card shown on the Spin tab.

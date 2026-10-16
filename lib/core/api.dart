@@ -90,6 +90,15 @@ class ApiClient {
   /// Called when the session is gone for good (refresh refused): the app returns to sign-in.
   void Function()? onSignedOut;
 
+  /// Why the last forced sign-out happened (for example a ban), shown on the sign-in screen once.
+  String? signOutReason;
+
+  String? takeSignOutReason() {
+    final reason = signOutReason;
+    signOutReason = null;
+    return reason;
+  }
+
   Map<String, String> _headers({bool json = true}) {
     final token = Session.instance.accessToken;
     return {
@@ -169,6 +178,12 @@ class ApiClient {
       await Session.instance.clear();
       onSignedOut?.call();
     }
+    // Banned by the team: the website answers 403 { banned: true }. Sign out at once.
+    if (res.statusCode == 403 && data['banned'] == true && auth && Session.instance.isSignedIn) {
+      signOutReason = message;
+      await Session.instance.clear();
+      onSignedOut?.call();
+    }
     throw ApiException(message, status: res.statusCode, data: data);
   }
 
@@ -205,6 +220,7 @@ class ApiClient {
         return true;
       }
       if (res.statusCode == 401 || res.statusCode == 403) {
+        if (res.statusCode == 403 && data['error'] is String) signOutReason = data['error'] as String;
         await Session.instance.clear();
         onSignedOut?.call();
       }

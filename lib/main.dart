@@ -40,6 +40,9 @@ Future<void> main() async {
       MaterialPageRoute(builder: (_) => const AuthScreen()),
       (_) => false,
     );
+    // A ban explains itself on the sign-in screen.
+    final reason = ApiClient.instance.takeSignOutReason();
+    if (reason != null) googleAuthError.value = reason;
   };
 
   // Google sign-in returns to the app as a deep link (dazzlingwins://auth?code=…).

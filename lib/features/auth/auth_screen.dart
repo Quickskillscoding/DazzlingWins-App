@@ -37,6 +37,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     googleAuthError.addListener(_onGoogleError);
+    // A message that arrived just before this screen opened (a ban, a failed Google sign-in).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onGoogleError());
   }
 
   @override
@@ -155,6 +157,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
       _googleBusy = false;
       _error = message;
     });
+    // Shown once: a later visit to this screen starts clean.
+    googleAuthError.value = null;
   }
 
   @override

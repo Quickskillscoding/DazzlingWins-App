@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import 'access_gate.dart';
 import 'config.dart';
 import 'session.dart';
 
@@ -18,6 +19,10 @@ class ApiException implements Exception {
   bool get unauthorized => status == 401;
   bool get kycRequired => data['kycRequired'] == true;
   bool get captchaRequired => data['captchaRequired'] == true;
+  /// The website refused because a VPN / proxy is on ("Your IP is not supported").
+  bool get vpnBlocked => data['vpnBlocked'] == true;
+  /// A second account on the same internet connection: KYC is needed first.
+  bool get signupKycRequired => data['signupKycRequired'] == true;
 
   @override
   String toString() => message;
@@ -92,6 +97,9 @@ class ApiClient {
 
   /// Why the last forced sign-out happened (for example a ban), shown on the sign-in screen once.
   String? signOutReason;
+
+  /// The last forced sign-out was a VPN block: the sign-in screen shows the "IP not supported" pop-up.
+  bool signOutForVpn = false;
 
   String? takeSignOutReason() {
     final reason = signOutReason;
@@ -178,6 +186,17 @@ class ApiClient {
       await Session.instance.clear();
       onSignedOut?.call();
     }
+    // VPN / proxy on: the website answers 403 { vpnBlocked: true }. Sign out at once.
+    if (res.statusCode == 403 && data['vpnBlocked'] == true && auth && Session.instance.isSignedIn) {
+      signOutReason = message;
+      signOutForVpn = true;
+      await Session.instance.clear();
+      onSignedOut?.call();
+    }
+    // Second account on this internet connection: KYC first (the app shows that screen).
+    if (res.statusCode == 403 && data['signupKycRequired'] == true) {
+      AppAccess.instance.markSignupKyc(message);
+    }
     // Banned by the team: the website answers 403 { banned: true }. Sign out at once.
     if (res.statusCode == 403 && data['banned'] == true && auth && Session.instance.isSignedIn) {
       signOutReason = message;
@@ -221,6 +240,7 @@ class ApiClient {
       }
       if (res.statusCode == 401 || res.statusCode == 403) {
         if (res.statusCode == 403 && data['error'] is String) signOutReason = data['error'] as String;
+        if (res.statusCode == 403 && data['vpnBlocked'] == true) signOutForVpn = true;
         await Session.instance.clear();
         onSignedOut?.call();
       }

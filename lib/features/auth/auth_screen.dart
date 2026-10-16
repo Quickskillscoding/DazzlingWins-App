@@ -9,6 +9,7 @@ import '../shell/home_shell.dart';
 import 'captcha_sheet.dart';
 import '../../main.dart' show googleAuthError;
 import 'google_auth.dart';
+import '../../widgets/access_gate_ui.dart';
 
 /// Sign in / create account — the website's own /api/auth/login and /api/auth/register, so
 /// bans, agent-account blocks, rate limits and the security check all apply exactly as on the site.
@@ -72,8 +73,15 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
         try {
           await _attempt(token);
         } on ApiException catch (e2) {
-          _fail(e2.message);
+          if (e2.vpnBlocked && mounted) {
+            await showVpnBlockedPopup(context, message: e2.message);
+          } else {
+            _fail(e2.message);
+          }
         }
+      } else if (e.vpnBlocked && mounted) {
+        // VPN / proxy on: the "IP not supported" pop-up, not just a line of text.
+        await showVpnBlockedPopup(context, message: e.message);
       } else {
         _fail(e.message);
       }

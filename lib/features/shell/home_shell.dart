@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/access_gate.dart';
+import '../../core/api.dart';
 import '../../core/app_state.dart';
 import '../../core/notification_inbox.dart';
 import '../../core/notifications.dart';
+import '../../core/session.dart';
 import '../../core/theme.dart';
 import '../../core/updater.dart';
+import '../../widgets/access_gate_ui.dart';
+import '../auth/auth_screen.dart';
 import '../games/games_screen.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
@@ -28,6 +33,11 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _index = 0;
 
+  /// How often the app asks the website whether this player may still use it (VPN / KYC rules).
+  static const _accessEvery = Duration(seconds: 60);
+  Timer? _accessTimer;
+  bool _foreground = true;
+
   @override
   void initState() {
     super.initState();
@@ -39,21 +49,41 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       unawaited(NotificationInbox.instance.refresh());
       if (mounted) unawaited(Updater.check(context));
     });
+    unawaited(AppAccess.instance.check());
+    _accessTimer = Timer.periodic(_accessEvery, (_) {
+      if (_foreground) unawaited(AppAccess.instance.check());
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _accessTimer?.cancel();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed) {
+      // Back in the app: a VPN turned on meanwhile signs the player out here.
+      unawaited(AppAccess.instance.check());
       unawaited(AppState.instance.refreshWallet().catchError((_) {}));
       unawaited(AppNotifications.checkCampaigns().catchError((_) => 0));
       unawaited(NotificationInbox.instance.refresh());
     }
+  }
+
+  /// Sign out from the "Complete your sign up" screen.
+  Future<void> _signOut() async {
+    await ApiClient.instance.post('/api/auth/activity', {'type': 'logout'}).catchError((_) => <String, dynamic>{});
+    await AppNotifications.clearOnSignOut();
+    await Session.instance.clear();
+    AppState.instance.reset();
+    NotificationInbox.instance.reset();
+    AppAccess.instance.reset();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const AuthScreen()), (_) => false);
   }
 
   void _select(int i) {
@@ -64,6 +94,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppAccess.instance,
+      builder: (context, _) {
+        // Second account on this internet connection: only KYC, chat and sign-out until approved.
+        if (AppAccess.instance.signupKycRequired) {
+          return PopScope(canPop: false, child: SignupKycGate(onSignOut: _signOut));
+        }
+        return _shell(context);
+      },
+    );
+  }
+
+  Widget _shell(BuildContext context) {
     return PopScope(
       canPop: _index == 0,
       onPopInvokedWithResult: (didPop, _) {

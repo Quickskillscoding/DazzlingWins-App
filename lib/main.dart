@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/api.dart';
+import 'core/access_gate.dart';
 import 'core/app_state.dart';
 import 'core/notification_inbox.dart';
 import 'core/session.dart';
@@ -11,6 +12,7 @@ import 'features/auth/auth_screen.dart';
 import 'features/auth/google_auth.dart';
 import 'features/shell/home_shell.dart';
 import 'features/splash/splash_screen.dart';
+import 'widgets/access_gate_ui.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -40,9 +42,20 @@ Future<void> main() async {
       MaterialPageRoute(builder: (_) => const AuthScreen()),
       (_) => false,
     );
-    // A ban explains itself on the sign-in screen.
+    AppAccess.instance.reset();
+    final forVpn = ApiClient.instance.signOutForVpn;
+    ApiClient.instance.signOutForVpn = false;
     final reason = ApiClient.instance.takeSignOutReason();
-    if (reason != null) googleAuthError.value = reason;
+    if (forVpn) {
+      // "Your IP is not supported – You are blocked", over the sign-in screen.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = navigatorKey.currentContext;
+        if (context != null) showVpnBlockedPopup(context, message: reason);
+      });
+    } else if (reason != null) {
+      // A ban explains itself on the sign-in screen.
+      googleAuthError.value = reason;
+    }
   };
 
   // Google sign-in returns to the app as a deep link (dazzlingwins://auth?code=…).

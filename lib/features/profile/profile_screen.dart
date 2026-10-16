@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/access_gate.dart';
 import '../../core/api.dart';
 import '../../core/app_state.dart';
 import '../../core/config.dart';
@@ -79,6 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
     await Session.instance.clear();
     AppState.instance.reset();
     NotificationInbox.instance.reset();
+    AppAccess.instance.reset();
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const AuthScreen()), (_) => false);
   }

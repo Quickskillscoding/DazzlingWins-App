@@ -63,6 +63,12 @@ void main() {
       expect(inbox.unreadCount, 1);
     });
 
+    test('game alerts and offers are told apart', () {
+      expect(InboxItem.fromJson({'id': 'alert-1', 'kind': 'alert', 'at': '2026-10-16T08:00:00.000Z'}).isAlert, isTrue);
+      expect(InboxItem.fromJson({'id': 'c-1', 'at': '2026-10-16T08:00:00.000Z'}).isAlert, isFalse);
+      expect(InboxItem.fromJson({'id': 'c-2', 'kind': 'weird', 'at': '2026-10-16T08:00:00.000Z'}).kind, 'offer');
+    });
+
     test('ignores duplicates and rows without an id', () {
       inbox.setFetched([_n('a', '2026-10-01T10:00:00.000Z'), _n('a', '2026-10-01T10:00:00.000Z'), _n('', '2026-10-02T10:00:00.000Z')]);
       expect(inbox.items.length, 1);

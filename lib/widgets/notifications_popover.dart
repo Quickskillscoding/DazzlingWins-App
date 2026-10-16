@@ -310,7 +310,7 @@ class _NotificationTile extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.14), shape: BoxShape.circle),
-                  child: const Icon(Icons.card_giftcard_rounded, color: AppColors.gold, size: 19),
+                  child: Icon(item.isAlert ? Icons.local_fire_department_rounded : Icons.card_giftcard_rounded, color: AppColors.gold, size: 19),
                 ),
                 if (!read)
                   Positioned(

@@ -6,13 +6,14 @@ import 'session.dart';
 
 /// One promo notification in the player's inbox.
 class InboxItem {
-  const InboxItem({required this.id, required this.title, required this.body, required this.at});
+  const InboxItem({required this.id, required this.title, required this.body, required this.at, this.kind = 'offer'});
 
   factory InboxItem.fromJson(Map<String, dynamic> json) => InboxItem(
         id: strOf(json['id']),
         title: strOf(json['title'], 'New offer for you'),
         body: strOf(json['body']),
         at: strOf(json['at']),
+        kind: strOf(json['kind']) == 'alert' ? 'alert' : 'offer',
       );
 
   final String id;
@@ -21,6 +22,11 @@ class InboxItem {
 
   /// ISO time the campaign was delivered to this player.
   final String at;
+
+  /// 'offer' = a promo campaign from the back office, 'alert' = the 8-hourly game alert.
+  final String kind;
+
+  bool get isAlert => kind == 'alert';
 
   /// Stable identity of this delivery (a campaign can be delivered more than once).
   String get key => '$id|$at';

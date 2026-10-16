@@ -6,33 +6,112 @@ import '../features/chat/live_chat_screen.dart';
 import '../features/profile/kyc_screen.dart';
 import 'ui.dart';
 
-/// "Your IP is not supported – You are blocked" (a VPN or proxy is on).
+/// "Your IP is not supported – You are blocked" (a VPN or proxy is on), over a blurred screen.
 Future<void> showVpnBlockedPopup(BuildContext context, {String? message}) {
-  final text = (message == null || message.trim().isEmpty) ? kVpnBlockedMessage : message.trim();
+  final custom = message != null && message.trim().isNotEmpty && !message.trim().toLowerCase().startsWith('your ip is not supported');
   return showAppPopup<void>(
     context,
-    builder: (ctx) => Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 22),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Center(
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.15), shape: BoxShape.circle),
-            child: const Icon(Icons.gpp_bad_rounded, color: AppColors.danger, size: 38),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text('Your IP is not supported', style: AppTheme.display(22), textAlign: TextAlign.center),
-        const SizedBox(height: 4),
-        Text('YOU ARE BLOCKED', style: AppTheme.body(12.5, weight: FontWeight.w800, color: AppColors.danger), textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        Text(text, style: AppTheme.body(14, color: AppColors.muted, height: 1.45), textAlign: TextAlign.center),
-        const SizedBox(height: 22),
-        PrimaryButton(label: 'OK', gold: true, onPressed: () => Navigator.of(ctx).maybePop()),
-      ]),
-    ),
+    blur: true,
+    maxWidth: 420,
+    builder: (ctx) => _VpnBlockedCard(message: custom ? message!.trim() : null),
   );
+}
+
+class _VpnBlockedCard extends StatelessWidget {
+  const _VpnBlockedCard({this.message});
+  final String? message;
+
+  static const _steps = [
+    (Icons.wifi_off_rounded, 'Turn off your VPN, proxy or private relay.'),
+    (Icons.wifi_rounded, 'Reconnect to your normal Wi-Fi or mobile data.'),
+    (Icons.login_rounded, 'Sign in again. Everything works as usual.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        // A soft red glow behind the shield that fades out before the card's edges.
+        gradient: RadialGradient(center: Alignment(0, -0.75), radius: 0.85, colors: [Color(0x33FF5C7A), Color(0x00FF5C7A)]),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(22, 6, 22, 22),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Center(
+            child: Container(
+              width: 82,
+              height: 82,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.danger.withValues(alpha: 0.32), AppColors.danger.withValues(alpha: 0.08)],
+                ),
+                border: Border.all(color: AppColors.danger.withValues(alpha: 0.45)),
+                boxShadow: [BoxShadow(color: AppColors.danger.withValues(alpha: 0.35), blurRadius: 34)],
+              ),
+              child: const Icon(Icons.gpp_bad_rounded, color: Color(0xFFFF9AAE), size: 42),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: AppColors.danger.withValues(alpha: 0.45)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.danger, shape: BoxShape.circle)),
+                const SizedBox(width: 7),
+                Text('YOU ARE BLOCKED', style: AppTheme.body(11, weight: FontWeight.w800, color: const Color(0xFFFF9AAE)).copyWith(letterSpacing: 1.6)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Your IP is not supported', style: AppTheme.display(24), textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(
+            message ?? 'A VPN, proxy or private relay is turned on. DazzlingWins only works on your normal internet connection.',
+            style: AppTheme.body(14, color: AppColors.muted, height: 1.45),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 18),
+          for (var i = 0; i < _steps.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 11, 14, 11),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.035),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(11)),
+                    child: Icon(_steps[i].$1, size: 17, color: AppColors.gold),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text.rich(TextSpan(children: [
+                      TextSpan(text: '${i + 1}. ', style: AppTheme.body(13.5, weight: FontWeight.w800, color: AppColors.gold)),
+                      TextSpan(text: _steps[i].$2, style: AppTheme.body(13.5, weight: FontWeight.w600, color: AppColors.text.withValues(alpha: 0.85))),
+                    ])),
+                  ),
+                ]),
+              ),
+            ),
+          const SizedBox(height: 12),
+          PrimaryButton(label: 'OK, got it', gold: true, onPressed: () => Navigator.of(context).maybePop()),
+        ]),
+      ),
+    );
+  }
 }
 
 /// Full-screen "Complete your sign up" for a second account on the same internet connection.

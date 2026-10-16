@@ -163,7 +163,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     if (message == null || !mounted) return;
     setState(() {
       _googleBusy = false;
-      _error = message;
+      // An empty message only ends the "signing in" state (the VPN window explained it already).
+      _error = message.isEmpty ? null : message;
     });
     // Shown once: a later visit to this screen starts clean.
     googleAuthError.value = null;

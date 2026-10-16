@@ -61,6 +61,13 @@ Future<void> main() async {
   // Google sign-in returns to the app as a deep link (dazzlingwins://auth?code=…).
   GoogleAuth.onResult = (error) async {
     if (error != null) {
+      // A VPN refusal gets the "IP not supported" window; other errors show on the sign-in screen.
+      final context = navigatorKey.currentContext;
+      if (error.toLowerCase().startsWith('your ip is not supported') && context != null) {
+        googleAuthError.value = '';
+        await showVpnBlockedPopup(context);
+        return;
+      }
       googleAuthError.value = error;
       return;
     }

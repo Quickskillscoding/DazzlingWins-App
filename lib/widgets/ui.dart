@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -269,14 +271,18 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
 /// the phone's navigation buttons cover its actions). Tap outside or press back to close it, unless
 /// [dismissible] is false. It stays clear of the status bar, the navigation bar and the keyboard,
 /// and its content scrolls when it is taller than the screen.
-Future<T?> showAppPopup<T>(BuildContext context, {required WidgetBuilder builder, bool dismissible = true, double maxWidth = 460}) {
+/// [blur] also blurs the screen behind the window (used for important notices).
+Future<T?> showAppPopup<T>(BuildContext context, {required WidgetBuilder builder, bool dismissible = true, double maxWidth = 460, bool blur = false}) {
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: dismissible,
     barrierLabel: 'Close',
-    barrierColor: Colors.black.withValues(alpha: 0.64),
+    barrierColor: Colors.black.withValues(alpha: blur ? 0.42 : 0.64),
     transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (ctx, _, __) => _AppPopup(maxWidth: maxWidth, child: Builder(builder: builder)),
+    pageBuilder: (ctx, _, __) {
+      final popup = _AppPopup(maxWidth: maxWidth, child: Builder(builder: builder));
+      return blur ? BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: popup) : popup;
+    },
     transitionBuilder: (ctx, animation, _, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
       return FadeTransition(

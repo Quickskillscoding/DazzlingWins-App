@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../core/theme.dart';
+import '../wallet/deposit_screen.dart';
 import 'chat_models.dart';
 
 /// What the single voice-note player is doing right now.
@@ -199,6 +200,9 @@ class ChatBubble extends StatelessWidget {
             ]),
           ),
         if (m.body.isNotEmpty) Text(m.body, style: AppTheme.body(14.5, color: Colors.white, height: 1.35)),
+        // A promo code from the team: one tap to copy it, or to deposit with it.
+        if (!mine && !m.pending)
+          for (final code in promoCodesIn(m.body)) _PromoCodeActions(code: code),
         const SizedBox(height: 4),
         Row(mainAxisSize: MainAxisSize.min, children: [
           Text(m.pending ? 'Sending…' : chatClock(m.createdAt), style: AppTheme.body(10, color: timeColor)),
@@ -506,6 +510,90 @@ class ChatImageViewer extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: InteractiveViewer(minScale: 1, maxScale: 5, child: ChatImage(message: message, fit: BoxFit.contain)),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Copy code" and "Deposit with this code" under a team message that carries a promo code.
+class _PromoCodeActions extends StatelessWidget {
+  const _PromoCodeActions({required this.code});
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [
+            const Icon(Icons.local_offer_rounded, size: 16, color: AppColors.gold),
+            const SizedBox(width: 7),
+            Expanded(
+              child: SelectableText(code, style: AppTheme.display(16, color: AppColors.goldLight).copyWith(letterSpacing: 1.5)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: _SmallAction(
+                icon: Icons.copy_rounded,
+                label: 'Copy code',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Clipboard.setData(ClipboardData(text: code));
+                  final messenger = ScaffoldMessenger.maybeOf(context);
+                  messenger?.hideCurrentSnackBar();
+                  messenger?.showSnackBar(const SnackBar(content: Text('Promo code copied')));
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _SmallAction(
+                icon: Icons.south_west_rounded,
+                label: 'Deposit',
+                filled: true,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DepositScreen(promoCode: code))),
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _SmallAction extends StatelessWidget {
+  const _SmallAction({required this.icon, required this.label, required this.onTap, this.filled = false});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = filled ? const Color(0xFF1A1200) : AppColors.gold;
+    return Material(
+      color: filled ? AppColors.gold : Colors.transparent,
+      shape: StadiumBorder(side: BorderSide(color: AppColors.gold.withValues(alpha: filled ? 1 : 0.6))),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 15, color: fg),
+            const SizedBox(width: 5),
+            Flexible(child: Text(label, style: AppTheme.body(12.5, weight: FontWeight.w800, color: fg), maxLines: 1, overflow: TextOverflow.ellipsis)),
+          ]),
         ),
       ),
     );

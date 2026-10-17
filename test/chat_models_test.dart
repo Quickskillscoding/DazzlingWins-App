@@ -51,6 +51,17 @@ void main() {
     });
   });
 
+  group('promo codes in chat', () {
+    test('finds the website promo code format, and only that', () {
+      const msg = '🎁 Your personal promo code\n\nK7#M2@Q9\n\nGet a 25% bonus on your next deposit. Valid for 24 hours.';
+      expect(promoCodesIn(msg), ['K7#M2@Q9']);
+      expect(promoCodesIn('Old code DW-AB12CD34 still works'), ['DW-AB12CD34']);
+      expect(promoCodesIn('Deposit \$25 today, reference ABCD1234'), isEmpty);
+      expect(promoCodesIn('Call 12345678 or email a@b.com'), isEmpty);
+      expect(promoCodesIn('Two: K7#M2@Q9 and @K7M2Q9#'), ['K7#M2@Q9', '@K7M2Q9#']);
+    });
+  });
+
   group('chat formatting', () {
     test('clock, duration and day labels', () {
       expect(chatClock(DateTime(2026, 10, 10, 15, 7)), '3:07 PM');

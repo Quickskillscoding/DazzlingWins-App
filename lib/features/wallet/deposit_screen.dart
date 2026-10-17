@@ -17,7 +17,10 @@ import 'payment_catalog.dart';
 /// the method's proof fields, an optional promo code and the payment screenshot.
 /// Same endpoint and checks as the website (/api/deposits).
 class DepositScreen extends StatefulWidget {
-  const DepositScreen({super.key});
+  const DepositScreen({super.key, this.promoCode});
+
+  /// Fills the promo code box (from "Deposit with this code" in Live Chat).
+  final String? promoCode;
   @override
   State<DepositScreen> createState() => _DepositScreenState();
 }
@@ -71,6 +74,7 @@ class _DepositScreenState extends State<DepositScreen> {
                   : _method == null
                       ? _MethodList(methods: _methods, catalog: _catalog, onPick: (m) => setState(() => _method = m))
                       : _DepositForm(
+                          promoCode: widget.promoCode,
                           key: ValueKey(_method!['id']),
                           method: _method!,
                           entry: _catalog[strOf(_method!['slug'])],
@@ -135,7 +139,8 @@ class _MethodList extends StatelessWidget {
 }
 
 class _DepositForm extends StatefulWidget {
-  const _DepositForm({super.key, required this.method, required this.entry, required this.onBack});
+  const _DepositForm({super.key, required this.method, required this.entry, required this.onBack, this.promoCode});
+  final String? promoCode;
   final Map<String, dynamic> method;
   final CatalogEntry? entry;
   final VoidCallback onBack;
@@ -153,6 +158,8 @@ class _DepositFormState extends State<_DepositForm> {
   @override
   void initState() {
     super.initState();
+    final code = widget.promoCode?.trim() ?? '';
+    if (code.isNotEmpty) _promo.text = code;
     for (final f in widget.entry?.proofFields ?? const <PayField>[]) {
       _proof[f.key] = TextEditingController();
     }

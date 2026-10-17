@@ -132,3 +132,19 @@ String chatDuration(Duration d) {
   final s = d.inSeconds < 0 ? 0 : d.inSeconds;
   return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
 }
+
+/// Promo codes in a message: 8 characters of A–Z, 2–9 and @#$%&* with at least one letter, digit
+/// and symbol (the website's code format), or an older DW-XXXXXX code. Same rule as the website
+/// chat's copy buttons (lib/chat-code-tokens.ts).
+final RegExp _promoToken = RegExp(r'(?<![A-Za-z0-9@#$%&*-])(DW-[A-Z0-9]{6,}|[A-Z0-9@#$%&*]{8})(?![A-Za-z0-9@#$%&*])');
+
+List<String> promoCodesIn(String body) {
+  final out = <String>[];
+  for (final m in _promoToken.allMatches(body)) {
+    final code = m.group(1)!;
+    final ok = code.startsWith('DW-') ||
+        (RegExp(r'[A-Z]').hasMatch(code) && RegExp(r'[0-9]').hasMatch(code) && RegExp(r'[@#$%&*]').hasMatch(code));
+    if (ok && !out.contains(code)) out.add(code);
+  }
+  return out;
+}

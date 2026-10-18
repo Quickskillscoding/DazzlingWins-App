@@ -15,6 +15,7 @@ import '../../widgets/access_gate_ui.dart';
 import '../auth/auth_screen.dart';
 import '../games/games_screen.dart';
 import '../home/home_screen.dart';
+import '../levels/level_rule_flow.dart';
 import '../profile/profile_screen.dart';
 import '../spin/spin_screen.dart';
 import '../wallet/wallet_screen.dart';
@@ -48,6 +49,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       unawaited(AppNotifications.checkCampaigns().catchError((_) => 0));
       unawaited(NotificationInbox.instance.refresh());
       if (mounted) unawaited(Updater.check(context));
+      // New sign-ups: Date of Birth, then the one-time XP Rule / X Rule choice (same as the website).
+      if (mounted) unawaited(LevelRuleFlow.ensure(context));
     });
     unawaited(AppAccess.instance.check());
     _accessTimer = Timer.periodic(_accessEvery, (_) {

@@ -1,4 +1,5 @@
 import '../../core/api.dart';
+import '../levels/x_rule.dart';
 
 // Wording and input rules of the website's game-account windows (Create Account, Buy Score,
 // Redeem Score, Transfer Score). The server enforces every rule; this file only mirrors what the
@@ -47,6 +48,9 @@ String _whole(double v) => v.isFinite ? v.toStringAsFixed(0) : '0';
 /// The line under "Redeem Score". [info] is the answer of GET /api/game-accounts/redeem;
 /// [starterCap] is the cash cap of the player's level (Bronze 100, Silver 150).
 String redeemHint(Map<String, dynamic> info, double starterCap) {
+  // X Rule players: 3x–(5 + level)x of the last deposit instead of the XP caps.
+  final xRule = XRuleStatus.from(info['xRule']);
+  if (xRule != null) return xRule.redeemHint;
   if (info['starter'] == true) {
     final cap = _whole(starterCap);
     return 'No redeem limit. At your level you receive 80% of a redeem up to $cap, or $cap for anything above that. The rest goes to your XP.';

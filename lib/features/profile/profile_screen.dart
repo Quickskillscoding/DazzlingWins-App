@@ -21,6 +21,7 @@ import 'rewards_panel.dart';
 import '../chat/live_chat_screen.dart';
 import '../games/my_games_screen.dart';
 import '../help/faq_screen.dart';
+import '../levels/x_rule.dart';
 import '../spin/spin_info.dart' show kSpinKycRequired;
 
 class ProfileScreen extends StatefulWidget {
@@ -120,6 +121,13 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                       Text(strOf(s.profile['email'], Session.instance.email ?? ''), style: AppTheme.body(13, color: AppColors.muted)),
                       const SizedBox(height: 6),
                       StatusChip(s.kycVerified ? 'Verified' : (s.kycStatus == 'pending' ? 'Pending' : 'Unverified')),
+                      if (s.profile['levelRule'] != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _ruleLine(s.profile),
+                          style: AppTheme.body(12, color: AppColors.gold, weight: FontWeight.w700),
+                        ),
+                      ],
                     ]),
                   ),
                 ]),
@@ -238,3 +246,15 @@ class _Tile extends StatelessWidget {
     );
   }
 }
+
+/// "X Rule · Level 2 · $2500 / $3000" or "XP Rule" for the profile header.
+String _ruleLine(Map<String, dynamic> profile) {
+  if (profile['levelRule'] != 'x') return 'Level rule: XP Rule';
+  final x = XRuleStatus.from(profile['xRule']);
+  if (x == null) return 'Level rule: X Rule';
+  final next = xRuleNextThreshold(x.level);
+  return next == null
+      ? 'X Rule · Level ${x.level} · Top level'
+      : 'X Rule · Level ${x.level} · \$${x.progress.toStringAsFixed(0)} / \$${next.toStringAsFixed(0)}';
+}
+

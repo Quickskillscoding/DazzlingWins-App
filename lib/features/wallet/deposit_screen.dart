@@ -11,6 +11,7 @@ import '../../core/theme.dart';
 import '../../widgets/image_pick.dart';
 import '../../widgets/ui.dart';
 import '../games/game_sheet.dart' show AmountField;
+import 'deposit_limits.dart';
 import 'payment_catalog.dart';
 
 /// Deposit: pick a method the admin enabled, pay to its details/QR, then submit the amount,
@@ -112,6 +113,7 @@ class _MethodList extends StatelessWidget {
         final m = methods[i - 1];
         final entry = catalog[strOf(m['slug'])];
         final bonus = numOf(m['bonus_percent']);
+        final limits = DepositLimits.of(m);
         return Panel(
           onTap: () => onPick(m),
           padding: const EdgeInsets.all(14),
@@ -128,6 +130,7 @@ class _MethodList extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(strOf(m['label']), style: AppTheme.body(15, weight: FontWeight.w800)),
                 if (bonus > 0) Text('+${bonus.toStringAsFixed(bonus % 1 == 0 ? 0 : 1)}% bonus', style: AppTheme.body(12, weight: FontWeight.w700, color: AppColors.mint)),
+                if (limits.any) Text(limits.text, style: AppTheme.body(11.5, weight: FontWeight.w600, color: AppColors.muted)),
               ]),
             ),
             const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
@@ -179,6 +182,12 @@ class _DepositFormState extends State<_DepositForm> {
     final amount = double.tryParse(_amount.text) ?? 0;
     if (amount <= 0) {
       toast(context, 'Enter the amount you sent.', error: true);
+      return;
+    }
+    // This method's minimum / maximum deposit (the website checks it again).
+    final limitError = DepositLimits.of(widget.method).errorFor(amount, strOf(widget.method['label'], 'this method'));
+    if (limitError != null) {
+      toast(context, limitError, error: true);
       return;
     }
     for (final f in widget.entry?.proofFields ?? const <PayField>[]) {
@@ -273,6 +282,13 @@ class _DepositFormState extends State<_DepositForm> {
         Text('2. Tell us about your payment', style: AppTheme.display(15)),
         const SizedBox(height: 12),
         AmountField(controller: _amount, label: 'Amount you sent'),
+        if (DepositLimits.of(widget.method).any) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Deposit limit for ${strOf(widget.method['label'], 'this method')}: ${DepositLimits.of(widget.method).text}',
+            style: AppTheme.body(12, weight: FontWeight.w700, color: AppColors.gold),
+          ),
+        ],
         for (final f in widget.entry?.proofFields ?? const <PayField>[]) ...[
           const SizedBox(height: 12),
           TextField(

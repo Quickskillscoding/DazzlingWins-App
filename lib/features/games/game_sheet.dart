@@ -834,7 +834,7 @@ class _ScoreFormState extends State<_ScoreForm> {
 
   @override
   Widget build(BuildContext context) {
-    final note = walletNote(_wallet);
+    final note = walletNote(_wallet, level: AppState.instance.progress.current.level);
     final noteColor = _wallet == 'bonus' ? AppColors.warning : AppColors.mint;
     final amount = _parseScore(_amount.text);
     return ListenableBuilder(

@@ -15,9 +15,29 @@ bool isValidGamePassword(String value) {
 
 const String kUsernameRule = 'Username must be 3–24 letters, numbers, dots, - or _.';
 
-/// The note under the wallet choice, exactly as on the website's Buy Score window.
-({String title, String text}) walletNote(String wallet) => wallet == 'bonus'
-    ? (title: 'Bonus Wallet score:', text: 'You can get 10% of your winnings in your Current Wallet when you redeem. The rest goes to your XP.')
+/// Share of a bonus-play redeem paid to the Current Wallet at a level (same as the website's
+/// bonusPlayRedeemRateForLevel): Level 0 10%, Level 1 20%, Level 2 25%, Level 3 30%, Level 4 35%,
+/// then 5% more per level, never above 100%.
+double bonusPlayRateForLevel(int level) {
+  if (level <= 0) return 0.10;
+  final rate = 0.15 + 0.05 * level;
+  return rate > 1 ? 1 : (rate * 100).round() / 100;
+}
+
+String percentOf(double rate) => '${(rate * 100).round()}%';
+
+/// Every level's share, as the website says it.
+const String kBonusPlayShares = '10% at Level 0, 20% at Level 1, 25% at Level 2, 30% at Level 3, 35% at Level 4, and 5% more each level after';
+
+/// The note under the wallet choice (the website's Buy Score wording). With [level], the
+/// player's own share is named first.
+({String title, String text}) walletNote(String wallet, {int? level}) => wallet == 'bonus'
+    ? (
+        title: 'Bonus Wallet score:',
+        text: level == null
+            ? 'You get a share of your winnings in your Current Wallet when you redeem: $kBonusPlayShares. The rest goes to your XP.'
+            : 'At your level (Level $level) you get ${percentOf(bonusPlayRateForLevel(level))} of your winnings in your Current Wallet when you redeem; the rest goes to your XP. Shares: $kBonusPlayShares.',
+      )
     : (title: 'Current Wallet score:', text: 'You can claim your winnings according to your XP level. Level up to claim more when you redeem.');
 
 String walletName(String wallet) => wallet == 'bonus' ? 'Bonus Wallet' : 'Current Wallet';

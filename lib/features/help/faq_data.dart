@@ -102,7 +102,7 @@ const List<FaqCategory> kFaq = [
       FaqItem(
         id: 'wd-3',
         question: 'Is there a maximum redemption amount?',
-        answer: 'You can withdraw up to \$350 every 24 hours; anything above that can be withdrawn after 24 hours. Redeeming score from a game has no limit. At Level 0 and Level 1 you receive 80% of a redeem up to \$100, or \$100 for anything above that, and the rest goes to your XP. Score added from the Bonus Wallet pays 10%, with the rest going to XP.',
+        answer: 'You can withdraw up to \$350 every 24 hours; anything above that can be withdrawn after 24 hours. Redeeming score from a game has no limit. At Level 0 and Level 1 you receive 80% of a redeem up to \$100, or \$100 for anything above that, and the rest goes to your XP. Score added from the Bonus Wallet pays a share by level (10% at Level 0, 20% at Level 1, 25% at Level 2, 30% at Level 3, 35% at Level 4, and 5% more each level after), with the rest going to XP.',
       ),
       FaqItem(
         id: 'wd-4',
@@ -129,7 +129,7 @@ const List<FaqCategory> kFaq = [
       FaqItem(
         id: 'bon-2',
         question: 'Can I redeem winnings from free play?',
-        answer: 'Yes, up to 10% of what you win from free play credits.',
+        answer: 'Yes. You get a share of what you win from free play credits in your Current Wallet: 10% at Level 0, 20% at Level 1, 25% at Level 2, 30% at Level 3, 35% at Level 4, and 5% more each level after. The rest goes to your XP.',
       ),
       FaqItem(
         id: 'bon-3',

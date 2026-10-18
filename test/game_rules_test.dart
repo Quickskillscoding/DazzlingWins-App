@@ -27,7 +27,11 @@ void main() {
       expect(walletNote('current').title, 'Current Wallet score:');
       expect(walletNote('current').text, contains('according to your XP level'));
       expect(walletNote('bonus').title, 'Bonus Wallet score:');
-      expect(walletNote('bonus').text, contains('10% of your winnings'));
+      expect(walletNote('bonus').text, contains('10% at Level 0, 20% at Level 1'));
+      expect(walletNote('bonus', level: 2).text, contains('At your level (Level 2) you get 25%'));
+      expect([0, 1, 2, 3, 4, 5, 6].map(bonusPlayRateForLevel).toList(), [0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45]);
+      expect(bonusPlayRateForLevel(40), 1);
+      expect(percentOf(0.35), '35%');
       expect(walletName('bonus'), 'Bonus Wallet');
       expect(walletName('current'), 'Current Wallet');
       expect(walletName(''), 'Current Wallet');

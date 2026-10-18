@@ -8,6 +8,7 @@ import '../../core/app_state.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../widgets/ui.dart';
+import '../games/game_rules.dart' show kBonusPlayShares;
 import '../games/game_sheet.dart';
 import '../games/games_repo.dart';
 
@@ -50,7 +51,7 @@ List<String> redeemRules(List<XpLevel> levels) {
       'At ${starters.map((l) => l.name).join(' and ')} level you receive 80% of a redeem in cash up to the cap of your level, '
           'or the cap itself for anything above it ($caps). The rest goes to your XP.',
     'At higher levels an approved redeem is paid in full, up to the daily redeem limit of your level. Anything above the limit goes to XP.',
-    'Score added from the Bonus Wallet pays 10% to your Current Wallet; the rest goes to XP.',
+    'Score added from the Bonus Wallet pays your Current Wallet a share by level ($kBonusPlayShares); the rest goes to XP.',
     'To take money out of your Current Wallet, use Withdraw.',
   ];
 }

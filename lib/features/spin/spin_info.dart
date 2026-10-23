@@ -17,6 +17,47 @@ const int kSpinBonusTtlHours = 72;
 /// "Verify to spin" pop-up still appears. Set to true to show the rule again.
 const bool kSpinKycRequired = false;
 
+/// 24 hours between free spins (website: FREE_SPIN_COOLDOWN_MS).
+const Duration kFreeSpinCooldown = Duration(hours: 24);
+
+/// What the wheel allows right now — the same rule as the website's serverFreeSpinStatus
+/// (lib/spin-rules.ts). Only drives the buttons; the server re-checks every spin.
+class SpinStatus {
+  const SpinStatus({required this.canClaim, required this.locked, required this.canBuyExtra, required this.extraUsed});
+  final bool canClaim;
+  final bool locked;
+
+  /// $1 extra spin: deposit-unlocked cycle, still running, during the 24h wait, once per wait.
+  final bool canBuyExtra;
+  final bool extraUsed;
+
+  /// The deposit made for an extra spin has been approved and applied.
+  bool get unlockedAfterDeposit => canBuyExtra || canClaim;
+}
+
+SpinStatus spinStatusFrom({
+  required int? left,
+  required String? lastAt,
+  required String? endsAt,
+  required bool unlockedByDeposit,
+  required String? lastPaidAt,
+  DateTime? now,
+}) {
+  final t = (now ?? DateTime.now()).toUtc();
+  final last = lastAt == null ? null : DateTime.tryParse(lastAt)?.toUtc();
+  final ends = endsAt == null ? null : DateTime.tryParse(endsAt)?.toUtc();
+  final paid = lastPaidAt == null ? null : DateTime.tryParse(lastPaidAt)?.toUtc();
+  final cooling = last != null && t.isBefore(last.add(kFreeSpinCooldown));
+  final locked = (left ?? 0) <= 0 || ends == null || !t.isBefore(ends);
+  final extraUsed = cooling && paid != null && !paid.isBefore(last);
+  return SpinStatus(
+    canClaim: !locked && !cooling,
+    locked: locked,
+    canBuyExtra: !locked && cooling && unlockedByDeposit && !extraUsed,
+    extraUsed: extraUsed,
+  );
+}
+
 /// The rules of the wheel, as plain sentences.
 const List<({IconData icon, String text})> kSpinRules = [
   (icon: Icons.schedule_rounded, text: 'One free spin every 24 hours for $kFreeSpinCycleDays days.'),

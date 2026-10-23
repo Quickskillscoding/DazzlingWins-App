@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -24,21 +25,102 @@ class SpinScreen extends StatefulWidget {
   State<SpinScreen> createState() => _SpinScreenState();
 }
 
-class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+class _SpinScreenState extends State<SpinScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 5200));
   double _from = 0;
   double _to = 0;
   bool _busy = false;
-  bool _offerPaid = false;
   String? _message;
+
+  /// The message came from a refused FREE spin ("blocked / deposit to unlock"). It goes stale
+  /// once a deposit unlocks the wheel; a refused PAID spin's message (e.g. not enough in the
+  /// Current Wallet) must stay visible.
+  bool _messageFromFreeSpin = false;
+
+  /// Re-reads the wallet while the player waits for a deposit (made to unlock spins) to be
+  /// approved. Stops as soon as the server allows a spin, or after [_kUnlockWaitMax].
+  Timer? _unlockPoll;
+  DateTime? _waitingSince;
+  static const Duration _kUnlockPollEvery = Duration(seconds: 5);
+  static const Duration _kUnlockWaitMax = Duration(minutes: 15);
 
   @override
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // The tab is kept alive, so its wallet copy can be old: always start from the server's state.
+    unawaited(AppState.instance.refreshWallet().catchError((_) {}));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the deposit app / browser: the approval may have landed meanwhile.
+    if (state == AppLifecycleState.resumed) unawaited(_refreshSpinState());
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _unlockPoll?.cancel();
     _c.dispose();
     super.dispose();
+  }
+
+  SpinStatus _status() {
+    final s = AppState.instance;
+    return spinStatusFrom(
+      left: s.freeSpinsLeft,
+      lastAt: s.lastFreeSpinAt,
+      endsAt: s.freeSpinCycleEndsAt,
+      unlockedByDeposit: s.freeSpinUnlockedByDeposit,
+      lastPaidAt: s.lastPaidSpinAt,
+    );
+  }
+
+  Future<void> _refreshSpinState() async {
+    await AppState.instance.refreshWallet().catchError((_) {});
+    if (!mounted) return;
+    final st = _status();
+    // A refused-spin message is stale once the server allows a spin again.
+    if (_message != null && _messageFromFreeSpin && st.unlockedAfterDeposit) setState(() => _message = null);
+    if (_waitingSince != null && st.unlockedAfterDeposit) {
+      _stopWaiting();
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: Text(st.canBuyExtra
+            ? 'Deposit approved — your \$$kPaidExtraSpinPrice extra spin is unlocked.'
+            : 'Deposit approved — your free spin is ready.'),
+      ));
+    }
+  }
+
+  void _startWaitingForUnlock() {
+    _waitingSince = DateTime.now();
+    _unlockPoll?.cancel();
+    _unlockPoll = Timer.periodic(_kUnlockPollEvery, (_) {
+      final since = _waitingSince;
+      if (since == null || DateTime.now().difference(since) > _kUnlockWaitMax) {
+        _stopWaiting();
+        return;
+      }
+      unawaited(_refreshSpinState());
+    });
+    unawaited(_refreshSpinState());
+  }
+
+  void _stopWaiting() {
+    _unlockPoll?.cancel();
+    _unlockPoll = null;
+    _waitingSince = null;
+  }
+
+  Future<void> _openDeposit() async {
+    _startWaitingForUnlock();
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DepositScreen()));
+    if (mounted) unawaited(_refreshSpinState());
   }
 
   double get _angle => _from + (_to - _from) * Curves.easeOutQuart.transform(_c.value);
@@ -49,7 +131,6 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
     setState(() {
       _busy = true;
       _message = null;
-      _offerPaid = false;
     });
     try {
       final d = await ApiClient.instance.post('/api/wallet', paid ? {'paid': true} : {});
@@ -63,10 +144,9 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
       if (e.kycRequired) {
         _askKyc(e.message);
       } else {
-        final canBuy = e.data['locked'] == true && AppState.instance.freeSpinUnlockedByDeposit && !paid;
         setState(() {
           _message = e.message;
-          _offerPaid = canBuy;
+          _messageFromFreeSpin = !paid;
         });
       }
       await AppState.instance.refreshWallet().catchError((_) {});
@@ -166,6 +246,7 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
           listenable: AppState.instance,
           builder: (context, _) {
             final s = AppState.instance;
+            final status = _status();
             return ListView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 130),
@@ -208,7 +289,7 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
                       Positioned(
                         top: 135,
                         child: GestureDetector(
-                          onTap: _busy ? null : () => _spin(),
+                          onTap: _busy ? null : () => _spin(paid: !status.canClaim && status.canBuyExtra),
                           child: Container(
                             width: 90,
                             height: 90,
@@ -230,7 +311,7 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 20),
-                if (_message != null)
+                if (_message != null && !(_messageFromFreeSpin && status.unlockedAfterDeposit))
                   Panel(
                     border: AppColors.warning.withValues(alpha: 0.4),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -239,20 +320,30 @@ class _SpinScreenState extends State<SpinScreen> with SingleTickerProviderStateM
                         const SizedBox(width: 8),
                         Expanded(child: Text(_message!, style: AppTheme.body(13, weight: FontWeight.w600, color: AppColors.warning))),
                       ]),
-                      if (_offerPaid) ...[
-                        const SizedBox(height: 12),
-                        PrimaryButton(label: 'Spin again for \$1', gold: true, onPressed: () => _spin(paid: true)),
-                      ] else ...[
-                        const SizedBox(height: 12),
-                        GhostButton(
-                          label: 'Deposit to unlock more spins',
-                          icon: Icons.south_west_rounded,
-                          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DepositScreen())),
-                        ),
-                      ],
+                      const SizedBox(height: 12),
+                      GhostButton(
+                        label: 'Deposit to unlock more spins',
+                        icon: Icons.south_west_rounded,
+                        onPressed: _openDeposit,
+                      ),
                     ]),
                   )
-                else
+                else if (status.canBuyExtra) ...[
+                  // Free spin used, cycle unlocked by a $5+ deposit: the $1 extra spin is available.
+                  Text(
+                    'Extra spin unlocked — spin again for \$$kPaidExtraSpinPrice from your Current Wallet.',
+                    style: AppTheme.body(13, weight: FontWeight.w700, color: AppColors.mint),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  PrimaryButton(
+                    label: 'Spin again for \$$kPaidExtraSpinPrice',
+                    icon: Icons.bolt_rounded,
+                    gold: true,
+                    loading: _busy,
+                    onPressed: () => _spin(paid: true),
+                  ),
+                ] else
                   PrimaryButton(label: 'Spin the wheel', icon: Icons.casino_rounded, gold: true, loading: _busy, onPressed: () => _spin()),
                 const SizedBox(height: 14),
                 if (s.lastFreeSpinAt != null)

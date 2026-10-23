@@ -49,4 +49,42 @@ void main() {
     expect(text.contains('KYC'), kSpinKycRequired);
     expect(kSpinKycRequired, isFalse);
   });
+
+  group('extra spin after a deposit (same rule as the website)', () {
+    final t = DateTime.utc(2026, 6, 1, 12);
+    String iso(Duration d) => t.add(d).toIso8601String();
+    SpinStatus st({int left = 4, bool byDeposit = true, Duration lastAgo = const Duration(hours: 1), String? paid}) =>
+        spinStatusFrom(
+          left: left,
+          lastAt: iso(-lastAgo),
+          endsAt: iso(const Duration(days: 4)),
+          unlockedByDeposit: byDeposit,
+          lastPaidAt: paid,
+          now: t,
+        );
+
+    test('before the approval lands: no extra spin, deposit still needed', () {
+      final s = st(byDeposit: false);
+      expect(s.canBuyExtra, isFalse);
+      expect(s.unlockedAfterDeposit, isFalse);
+    });
+    test('after a \$5+ approval: the \$1 extra spin is unlocked during the 24h wait', () {
+      final s = st(left: 5);
+      expect(s.canBuyExtra, isTrue);
+      expect(s.unlockedAfterDeposit, isTrue);
+    });
+    test('one extra spin per wait', () {
+      expect(st(paid: iso(const Duration(minutes: -10))).canBuyExtra, isFalse);
+    });
+    test('24h wait over: the free spin is ready instead', () {
+      final s = st(lastAgo: const Duration(hours: 30));
+      expect(s.canClaim, isTrue);
+      expect(s.canBuyExtra, isFalse);
+    });
+    test('cycle over or no spins left: blocked', () {
+      expect(st(left: 0).locked, isTrue);
+      expect(st(left: 0).canBuyExtra, isFalse);
+    });
+  });
 }
+

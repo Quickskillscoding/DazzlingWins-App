@@ -1064,7 +1064,7 @@ class _RedeemSheetState extends State<_RedeemSheet> {
         const SizedBox(height: 4),
         Text('From ${strOf(widget.game['title'], 'your game')}', style: AppTheme.body(13.5, color: AppColors.muted)),
         const SizedBox(height: 6),
-        Text(redeemHint(widget.info, starterCap), style: AppTheme.body(12.5, color: AppColors.faint, height: 1.4)),
+        Text(redeemHint(widget.info, starterCap, level: AppState.instance.progress.current.level), style: AppTheme.body(12.5, color: AppColors.faint, height: 1.4)),
         const SizedBox(height: 16),
         _fieldLabel('How many to redeem'),
         const SizedBox(height: 8),

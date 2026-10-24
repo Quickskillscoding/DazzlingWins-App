@@ -46,8 +46,17 @@ String walletName(String wallet) => wallet == 'bonus' ? 'Bonus Wallet' : 'Curren
 String _whole(double v) => v.isFinite ? v.toStringAsFixed(0) : '0';
 
 /// The line under "Redeem Score". [info] is the answer of GET /api/game-accounts/redeem;
-/// [starterCap] is the cash cap of the player's level (Bronze 100, Silver 150).
-String redeemHint(Map<String, dynamic> info, double starterCap) {
+/// [starterCap] is the cash cap of the player's level (Bronze 100, Silver 150); [level] the
+/// player's XP level.
+///
+/// info['bonusPlay'] comes from the server: true only when Bonus Wallet money went into this
+/// round of the game (a Bonus Wallet add-score since the last redeem). Score added from the
+/// Current Wallet never gets the Bonus Wallet share, even if old bonus score is left in the game.
+String redeemHint(Map<String, dynamic> info, double starterCap, {int level = 0}) {
+  if (info['bonusPlay'] == true) {
+    return 'This game was funded from your Bonus Wallet. You receive ${percentOf(bonusPlayRateForLevel(level))} '
+        'of a redeem in your Current Wallet at Level $level; the rest goes to your XP.';
+  }
   // X Rule players: 3x–(5 + level)x of the last deposit instead of the XP caps.
   final xRule = XRuleStatus.from(info['xRule']);
   if (xRule != null) return xRule.redeemHint;

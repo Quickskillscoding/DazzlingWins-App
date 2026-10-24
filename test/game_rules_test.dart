@@ -54,6 +54,18 @@ void main() {
       expect(redeemHint({'starter': true}, 150), contains('up to 150, or 150 for anything above'));
     });
 
+    test('Current Wallet play at Level 0 shows the 80% starter rule, even with old bonus score', () {
+      // Server says this round was NOT funded from the Bonus Wallet.
+      final hint = redeemHint({'starter': true, 'bonusPlay': false}, 100);
+      expect(hint, contains('80%'));
+      expect(hint, isNot(contains('Bonus Wallet')));
+    });
+
+    test('Bonus Wallet play shows the share for the level', () {
+      expect(redeemHint({'starter': true, 'bonusPlay': true}, 100, level: 0), contains('10%'));
+      expect(redeemHint({'starter': true, 'bonusPlay': true}, 150, level: 1), contains('20%'));
+    });
+
     test('higher levels: daily cap and what is left today', () {
       expect(
         redeemHint({'starter': false, 'dailyCap': 300, 'dailyRemaining': 120.4}, 100),

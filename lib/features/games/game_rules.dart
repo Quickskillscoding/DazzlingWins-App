@@ -64,7 +64,7 @@ String redeemHint(Map<String, dynamic> info, double starterCap, {int level = 0})
     final cap = _whole(starterCap);
     return 'No redeem limit. At your level you receive 80% of a redeem up to $cap, or $cap for anything above that. The rest goes to your XP.';
   }
-  return 'Level cap ${_whole(numOf(info['dailyCap']))} / day · ${_whole(numOf(info['dailyRemaining']))} left today. Max 100 per request. Extra score converts to XP.';
+  return 'Level cap ${_whole(numOf(info['dailyCap']))} / day · ${_whole(numOf(info['dailyRemaining']))} left today. Paid in full up to your daily cap; anything above it converts to XP.';
 }
 
 /// The line under "Transfer Score". [info] is the answer of GET /api/game-accounts/transfer.

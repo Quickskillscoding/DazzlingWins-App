@@ -69,7 +69,7 @@ void main() {
     test('higher levels: daily cap and what is left today', () {
       expect(
         redeemHint({'starter': false, 'dailyCap': 300, 'dailyRemaining': 120.4}, 100),
-        'Level cap 300 / day · 120 left today. Max 100 per request. Extra score converts to XP.',
+        'Level cap 300 / day · 120 left today. Paid in full up to your daily cap; anything above it converts to XP.',
       );
       expect(transferHint({'dailyCap': 300, 'dailyRemaining': 300}), 'Level cap 300 / day · 300 left today. Max 100 per request. Extra score converts to XP.');
       expect(transferHint(const {}), contains('Level cap 0 / day'));

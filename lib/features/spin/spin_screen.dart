@@ -45,6 +45,13 @@ class _SpinScreenState extends State<SpinScreen>
   static const Duration _kUnlockPollEvery = Duration(seconds: 5);
   static const Duration _kUnlockWaitMax = Duration(minutes: 15);
 
+  /// While the wheel shows locked, re-read the wallet now and then: a deposit approved from
+  /// anywhere (Wallet tab, website, another device) must unlock this kept-alive tab without the
+  /// player having to restart the app. Also lets the server re-apply a missed unlock.
+  Timer? _lockWatch;
+  bool _foreground = true;
+  static const Duration _kLockWatchEvery = Duration(seconds: 30);
+
   @override
   bool get wantKeepAlive => true;
 
@@ -54,11 +61,15 @@ class _SpinScreenState extends State<SpinScreen>
     WidgetsBinding.instance.addObserver(this);
     // The tab is kept alive, so its wallet copy can be old: always start from the server's state.
     unawaited(AppState.instance.refreshWallet().catchError((_) {}));
+    _lockWatch = Timer.periodic(_kLockWatchEvery, (_) {
+      if (_foreground && mounted && _waitingSince == null && _status().locked) unawaited(_refreshSpinState());
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Back from the deposit app / browser: the approval may have landed meanwhile.
+    _foreground = state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed) unawaited(_refreshSpinState());
   }
 
@@ -66,6 +77,7 @@ class _SpinScreenState extends State<SpinScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _unlockPoll?.cancel();
+    _lockWatch?.cancel();
     _c.dispose();
     super.dispose();
   }

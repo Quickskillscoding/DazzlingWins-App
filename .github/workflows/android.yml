@@ -113,16 +113,24 @@ jobs:
 
       - name: Publish release
         if: steps.signing.outputs.signed == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: DazzlingWins 1.0.${{ github.run_number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v1.0.${{ github.run_number }}
+          TITLE: DazzlingWins 1.0.${{ github.run_number }}
           # Fixed text. Never the commit message: that is developer text and must not reach players.
-          body: New version of the DazzlingWins app with the latest features and fixes.
-          make_latest: 'true'
-          files: |
-            dist/DazzlingWins.apk
-            dist/DazzlingWins.apk.sha256
+          NOTES: New version of the DazzlingWins app with the latest features and fixes.
+        # Draft first, public only once both files are up: the website button and in-app updater read
+        # the latest release, so it must never appear without its APK. Retries a failed APK upload.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+            if gh release create "$TAG" dist/DazzlingWins.apk dist/DazzlingWins.apk.sha256                  --draft --title "$TITLE" --notes "$NOTES"                && gh release edit "$TAG" --draft=false --latest; then
+              exit 0
+            fi
+            echo "Publish attempt $attempt failed; retrying..."
+            sleep 30
+          done
+          exit 1
 
       - name: Clean up secrets
         if: always()

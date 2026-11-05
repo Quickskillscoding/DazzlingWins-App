@@ -61,6 +61,13 @@ void main() {
       expect(hint, isNot(contains('Bonus Wallet')));
     });
 
+    test('shows the wallet of the last add-score', () {
+      final hint = redeemHint({'starter': true, 'bonusPlay': false, 'lastAdd': {'wallet': 'current', 'amount': 10}}, 100);
+      expect(hint, contains('Last score added to this game from: Current Wallet (\$10.00)'));
+      expect(hint, contains('80%'));
+      expect(lastAddLine({}), isNull);
+    });
+
     test('Bonus Wallet play shows the share for the level', () {
       expect(redeemHint({'starter': true, 'bonusPlay': true}, 100, level: 0), contains('10%'));
       expect(redeemHint({'starter': true, 'bonusPlay': true}, 150, level: 1), contains('20%'));

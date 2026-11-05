@@ -49,12 +49,28 @@ String _whole(double v) => v.isFinite ? v.toStringAsFixed(0) : '0';
 /// [starterCap] is the cash cap of the player's level (Bronze 100, Silver 150); [level] the
 /// player's XP level.
 ///
-/// info['bonusPlay'] comes from the server: true only when Bonus Wallet money went into this
-/// round of the game (a Bonus Wallet add-score since the last redeem). Score added from the
-/// Current Wallet never gets the Bonus Wallet share, even if old bonus score is left in the game.
+/// info['bonusPlay'] comes from the server: true only when the LAST add-score on this game came
+/// from the Bonus Wallet. Earlier adds never matter. info['lastAdd'] is that add, shown to the player.
 String redeemHint(Map<String, dynamic> info, double starterCap, {int level = 0}) {
+  final rule = _redeemRuleHint(info, starterCap, level);
+  final last = lastAddLine(info);
+  return last == null ? rule : '$last\n$rule';
+}
+
+/// "Last score added to this game from: Current Wallet (\$10.00)", or null when none is on record.
+String? lastAddLine(Map<String, dynamic> info) {
+  final add = info['lastAdd'];
+  if (add is! Map) return null;
+  final wallet = add['wallet'];
+  if (wallet != 'bonus' && wallet != 'current') return null;
+  final name = wallet == 'bonus' ? 'Bonus Wallet' : 'Current Wallet';
+  final amount = double.tryParse('${add['amount']}') ?? 0;
+  return 'Last score added to this game from: $name${amount > 0 ? ' (\$${amount.toStringAsFixed(2)})' : ''}';
+}
+
+String _redeemRuleHint(Map<String, dynamic> info, double starterCap, int level) {
   if (info['bonusPlay'] == true) {
-    return 'This game was funded from your Bonus Wallet. You receive ${percentOf(bonusPlayRateForLevel(level))} '
+    return 'Your last score on this game was added from the Bonus Wallet. You receive ${percentOf(bonusPlayRateForLevel(level))} '
         'of a redeem in your Current Wallet at Level $level; the rest goes to your XP.';
   }
   // X Rule players: 3x–(5 + level)x of the last deposit instead of the XP caps.

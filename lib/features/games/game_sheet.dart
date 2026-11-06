@@ -10,6 +10,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../widgets/ui.dart';
 import '../wallet/deposit_screen.dart';
+import '../levels/x_rule.dart';
 import 'game_rules.dart';
 import 'games_repo.dart';
 import 'lucky_reels.dart';
@@ -1054,6 +1055,17 @@ class _RedeemSheetState extends State<_RedeemSheet> {
     }
   }
 
+  /// X Rule player playing with Current Wallet score: the request is capped at (5 + level)x the last
+  /// deposit and the rest goes to the X Rule level (server: docs/supabase-x-rule-redeem-cap.sql).
+  ({double cash, double points})? _xRuleSplit() {
+    if (widget.info['bonusPlay'] == true) return null;
+    final x = XRuleStatus.from(widget.info['xRule']);
+    final amount = double.tryParse(_amount.text.trim()) ?? 0;
+    if (x == null || x.lastDeposit <= 0 || amount < x.minClaim) return null;
+    final claim = xRuleClaim(x.lastDeposit, x.level, amount);
+    return (cash: claim.cash, points: claim.points);
+  }
+
   @override
   Widget build(BuildContext context) {
     final starterCap = AppState.instance.progress.current.starterCashCap ?? 100.0;
@@ -1070,10 +1082,16 @@ class _RedeemSheetState extends State<_RedeemSheet> {
         const SizedBox(height: 8),
         _ScoreField(
           controller: _amount,
-          onChanged: (_) {
-            if (_error != null) setState(() => _error = null);
-          },
+          // Rebuild on every change: the X Rule preview below follows the amount.
+          onChanged: (_) => setState(() => _error = null),
         ),
+        if (_xRuleSplit() case final split?) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Redeem request: \$${split.cash.toStringAsFixed(2)} to Current Wallet · \$${split.points.toStringAsFixed(2)} to your X Rule level',
+            style: AppTheme.body(12.5, weight: FontWeight.w700, color: AppColors.gold, height: 1.35),
+          ),
+        ],
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(_error!, style: AppTheme.body(13, weight: FontWeight.w700, color: AppColors.danger, height: 1.35)),

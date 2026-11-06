@@ -89,6 +89,6 @@ class XRuleStatus {
     if (lastDeposit <= 0) {
       return 'X Rule Level $level: make a deposit first. You can redeem ${kXRuleMinMultiple}x–${maxMultiple}x of your last deposit.';
     }
-    return 'X Rule Level $level: redeem at least ${_money(minClaim)} (${kXRuleMinMultiple}x your last ${_money(lastDeposit)} deposit). Up to ${_money(maxClaim)} (${maxMultiple}x) goes to your Current Wallet; the rest raises your X Rule level.';
+    return 'X Rule Level $level: redeem at least ${_money(minClaim)} (${kXRuleMinMultiple}x your last ${_money(lastDeposit)} deposit). Your redeem request is at most ${_money(maxClaim)} (${maxMultiple}x) to your Current Wallet; anything you redeem above that raises your X Rule level.';
   }
 }
